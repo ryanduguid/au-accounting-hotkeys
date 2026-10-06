@@ -3,6 +3,8 @@
 Type Australian workpaper dates and use a searchable library of period labels, draft snippets and text transformations on Windows with AutoHotkey v2.
 
 [![Check](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml/badge.svg)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-5C2D91.svg?labelColor=04001F)](LICENSE)
+[![AutoHotkey: v2](https://img.shields.io/badge/AutoHotkey-v2-5C2D91.svg?labelColor=04001F)](https://www.autohotkey.com/)
 
 ## Start
 
