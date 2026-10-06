@@ -1,10 +1,15 @@
 #Requires AutoHotkey v2.0
 
 TestExpanded() {
+    AssertEqual(RegisterHotkeys.MinParams, 1, "Original registration minimum arity")
+    AssertEqual(RegisterHotkeys.MaxParams, 1, "Original registration maximum arity")
+    AssertComparisonRejects("ABC", "abc", "Case-only assertion mismatch fails")
+    AssertComparisonRejects(1, "1", "Type-only assertion mismatch fails")
     TestDateHelpers()
     TestIdentifiersAndText()
     TestCatalogue()
     TestSnippetLoading()
+    TestSnippetLabelsAndRecovery()
     TestSnippetLimits()
     TestPickerState()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
@@ -22,6 +27,13 @@ TestExpanded() {
 TestDateHelpers() {
     AssertEqual(FinancialYearStart(1900), "01/07/1899", "Earliest selected year start")
     AssertEqual(FinancialYearStart(2026), "01/07/2025", "FY start")
+    AssertValueError(() => FinancialYearEnd("2026`n"), "Trailing year newline rejected as ValueError")
+    AssertValueError(() => QuarterStart(2026, "1`n"), "Trailing start-quarter newline rejected")
+    AssertValueError(() => QuarterEnd(2026, "1`n"), "Trailing end-quarter newline rejected")
+    AssertValueError(() => DaysInMonth("2026`n", 1), "Trailing calendar-year newline rejected")
+    AssertValueError(() => DaysInMonth(2026, "1`n"), "Trailing month newline rejected")
+    AssertValueError(() => CalendarDate(2026, 1, "1`n"), "Trailing day newline rejected")
+    AssertValueError(() => NormaliseHotkey("D`n"), "Trailing hotkey newline rejected")
     AssertEqual(FinancialYearRange(2026), "01/07/2025 to 30/06/2026", "FY range")
     starts := ["01/07/2025", "01/10/2025", "01/01/2026", "01/04/2026"]
     for quarterIndex, expected in starts {
@@ -144,6 +156,10 @@ TestCatalogue() {
             : entry.Category = "Input dates" ? "2024-02-29" : " alpha `n beta "
         output := ProduceCommand(entry, context, sample)
         AssertEqual(output != "", true, "Every built-in producer runs")
+        if entry.Id = "Uppercase"
+            AssertEqual(ProduceCommand(entry, context, "MiXeD text"), "MIXED TEXT", "Uppercase exact output")
+        if entry.Id = "Lowercase"
+            AssertEqual(ProduceCommand(entry, context, "MiXeD text"), "mixed text", "Lowercase exact output")
     }
     AssertEqual(FilterCommands(BuiltinCommands(), "QUARTER end").Length, 3, "Search uses case-insensitive terms")
     AssertEqual(FilterCommands(BuiltinCommands(), ".*[()").Length, 0, "Search is literal")
@@ -154,6 +170,7 @@ TestCatalogue() {
         AssertEqual(ExpandSnippet("{{" tokenName "}}", context), tokenValue, "Every token supported")
     literalBody := 'Run("calc.exe") #Include example.ahk %A_Clipboard% {Enter} ^c'
     AssertEqual(ExpandSnippet(literalBody, context), literalBody, "Script-looking snippet remains text")
+    AssertEqual(ExpandSnippet("MiXeD {{FY_LABEL}} TeXt", context), "MiXeD 2025-26 TeXt", "Mixed-case snippet preserved exactly")
     for badBody in ["{{UNKNOWN}}", "{{today_au}}", "{{FY_END}", "FY_END}}", "{{}}", "{{{{FY_END}}"]
         AssertValueError(ExpandSnippet.Bind(badBody, context), "Bad token rejected")
     AssertValueError(() => ExpandSnippet(RepeatText("{{FY_END}}", 101), context), "Token count limit")
@@ -162,6 +179,54 @@ TestCatalogue() {
     catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
     AssertEqual(catalogue.Commands.Length, 57, "Built-ins and bundled snippets discovered")
+    for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
+        AssertEqual(InStr(draft.Body, "[complete") > 0, true, "Bundled draft requires completion: " draft.Name)
+}
+
+AssertComparisonRejects(actual, expected, description) {
+    global checks
+    try AssertEqual(actual, expected, description)
+    catch Error {
+        checks += 1
+        return
+    }
+    throw Error(description ": comparison unexpectedly passed.")
+}
+
+TestSnippetLabelsAndRecovery() {
+    directory := A_Temp "\au-hotkeys-snippet-labels-" ProcessExist()
+    second := directory "\local"
+    context := {Year: 2026, Quarter: 4, Timestamp: "20240229000000"}
+    DirCreate(second)
+    paths := [directory "\same.txt", second "\same.txt"]
+    try {
+        FileAppend("{{UNKNOWN}}", paths[1], "UTF-8-RAW")
+        FileAppend("accepted", paths[2], "UTF-8-RAW")
+        loaded := LoadSnippets([directory, second], context)
+        AssertEqual(loaded.Items.Length, 1, "Invalid snippet does not reserve its name")
+        AssertEqual(loaded.Items[1].Name, "same", "Later valid name accepted")
+        AssertEqual(loaded.Items[1].Body, "accepted", "Later valid body accepted")
+        AssertEqual(loaded.Errors.Length, 1, "Invalid first snippet reported visibly")
+        for label in [RepeatText("a", 80), RepeatText("a", 81), "_Draft", "-Draft", "R" Chr(0xE9) "sum" Chr(0xE9)] {
+            path := second "\" label ".txt"
+            paths.Push(path)
+            FileAppend("draft", path, "UTF-8-RAW")
+        }
+        loaded := LoadSnippets([second], context)
+        AssertEqual(loaded.Items.Length, 2, "80-character ASCII label accepted")
+        AssertEqual(loaded.Errors.Length, 4, "81-character, leading punctuation and non-ASCII labels rejected")
+        for message in loaded.Errors {
+            AssertEqual(InStr(message, "start with an ASCII letter or digit") > 0, true, "Label error explains leading-character rule")
+            AssertEqual(InStr(message, "at most 80 characters") > 0, true, "Label error explains length rule")
+        }
+    } finally {
+        for path in paths {
+            if FileExist(path)
+                FileDelete(path)
+        }
+        DirDelete(second)
+        DirDelete(directory)
+    }
 }
 
 TestSnippetLoading() {
@@ -228,6 +293,7 @@ class FakeClipboard {
     Output := ""
     Approved := false
     Opened := 0
+    OnConfirm := 0
 
     ReadText() {
         this.Reads += 1
@@ -241,6 +307,8 @@ class FakeClipboard {
 
     Confirm() {
         this.Confirms += 1
+        if IsObject(this.OnConfirm)
+            this.OnConfirm.Call()
         return this.Approved
     }
 
@@ -308,6 +376,13 @@ TestPickerState() {
         fake.Approved := true
         AssertEqual(palette.CopyResult(), true, "Formula copy with explicit confirmation")
         AssertEqual(fake.Output, "=1+1", "Confirmed output is exact")
+        fake.Value := "=sum(a1)"
+        palette.LoadInput()
+        fake.OnConfirm := ChangeTestInput.Bind(palette, "=SUM(A1)")
+        writesBeforeCaseChange := fake.Writes
+        AssertEqual(palette.CopyResult(), false, "Case-only change during confirmation refuses copy")
+        AssertEqual(fake.Writes, writesBeforeCaseChange, "Changed preview was not copied")
+        fake.OnConfirm := 0
         fake.Value := " `t`r`n"
         palette.LoadInput()
         AssertEqual(palette.CopyButton.Enabled, false, "Empty transformed result disabled")
@@ -330,13 +405,18 @@ TestPickerState() {
     finally overflowPicker.Close()
 }
 
+ChangeTestInput(picker, text) {
+    picker.Input.Value := text
+    picker.RefreshPreview()
+}
+
 TestPickerHotkeyScope() {
     fake := FakeClipboard()
     settings := ReadSettings(A_ScriptDir "\..\config.example.ini")
     SplitPath(A_AhkPath, &executable)
     settings.Applications := [executable]
     settings.Keys["Picker"] := "^!Space"
-    RegisterHotkeys(settings, ObjBindMethod(fake, "OpenPicker"))
+    RegisterHotkeysCore(settings, ObjBindMethod(fake, "OpenPicker"))
     host := Gui(, "AU hotkeys: fabricated picker scope test")
     scopeInput := host.AddEdit("w400")
     try {
@@ -380,4 +460,68 @@ TestPickerKeyboard() {
         AssertEqual(fake.Output, "2024-02-29", "Native copy button invokes fake writer")
         AssertEqual(IsAllowedApplication([]), false, "Direct hotkeys suppressed inside picker")
     } finally palette.Close()
+}
+
+ReplaceNativeEdit(control, text) {
+    SendMessage(0xB1, 0, -1, control) ; EM_SETSEL selects the existing text.
+    SendMessage(0xC2, 0, StrPtr(text), control) ; EM_REPLACESEL exercises the edit's native limit.
+    Sleep(100)
+}
+
+TestPickerManualLimits() {
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    try {
+        palette.Show()
+        if !WinWaitActive("ahk_id " palette.Window.Hwnd, , 3)
+            throw Error("Synthetic limit-test picker could not receive focus.")
+        ChooseCommand(palette, "TrimText")
+        ReplaceNativeEdit(palette.Input, RepeatText("a", 32770))
+        AssertEqual(StrLen(palette.Input.Value), 32769, "Native input retains one character beyond processing cap")
+        AssertEqual(palette.Output, "", "Oversize native input does not produce a valid prefix")
+        AssertEqual(palette.CopyButton.Enabled, false, "Oversize native input disables copy")
+        ReplaceNativeEdit(palette.Input, RepeatText("a", 32768))
+        AssertEqual(palette.Output, RepeatText("a", 32768), "At-cap native input produces complete output")
+        AssertEqual(palette.Preview.Value, palette.Output, "At-cap native preview is complete")
+        ReplaceNativeEdit(palette.Search, RepeatText("x", 130))
+        AssertEqual(StrLen(palette.Search.Value), 129, "Native search retains one character beyond processing cap")
+        AssertEqual(palette.Output, "", "Oversize native search clears output")
+        AssertEqual(palette.CopyButton.Enabled, false, "Oversize native search disables copy")
+        ReplaceNativeEdit(palette.Search, RepeatText(" ", 128))
+        AssertEqual(StrLen(palette.Search.Value), 128, "At-cap native search is retained completely")
+        AssertEqual(palette.Rows.Length, 45, "At-cap whitespace query still searches the catalogue")
+        AssertEqual(fake.Reads + fake.Writes, 0, "Manual entry does not access clipboard")
+    } finally palette.Close()
+}
+
+TestPickerTargetBoundary() {
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    settings := ReadSettings(A_ScriptDir "\..\config.example.ini")
+    SplitPath(A_AhkPath, &executable)
+    settings.Applications := [executable]
+    settings.Keys["Picker"] := "^!Space"
+    RegisterHotkeysCore(settings, (*) => palette.Show())
+    target := Gui(, "AU hotkeys: fabricated originating target")
+    targetInput := target.AddEdit("w400", "Target sentinel remains unchanged")
+    try {
+        target.Show()
+        targetInput.Focus()
+        if !WinWaitActive("ahk_id " target.Hwnd, , 3)
+            throw Error("Fabricated target could not receive focus.")
+        SendLevel(1)
+        SendEvent("^!{Space}")
+        if !WinWaitActive("ahk_id " palette.Window.Hwnd, , 3)
+            throw Error("Picker hotkey did not open the synthetic picker.")
+        ChooseCommand(palette, "YearEnd")
+        AssertEqual(palette.CopyResult(), true, "Copy from hotkey-opened picker succeeds")
+        AssertEqual(fake.Output, "30/06/2026", "Only writer receives exact preview")
+        AssertEqual(fake.Writes, 1, "Explicit copy writes once")
+        AssertEqual(fake.Reads, 0, "Generated output does not load clipboard")
+        AssertEqual(!!WinActive("ahk_id " target.Hwnd), false, "Copy does not restore originating target focus")
+        AssertEqual(targetInput.Value, "Target sentinel remains unchanged", "Copy does not type into originating target")
+    } finally {
+        palette.Close()
+        target.Destroy()
+    }
 }

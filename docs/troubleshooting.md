@@ -26,9 +26,11 @@ Select a command and provide its required input. Input commands require manual t
 
 Changing commands clears previous input. Search with ordinary words; search punctuation is literal.
 
+Clipboard size is validated after Windows supplies the text. The limit bounds accepted processing and output, but not the clipboard provider's initial allocation or transfer. Use a smaller fabricated input when investigating size errors.
+
 ## A snippet is missing
 
-Use a top-level UTF-8 `.txt` file in `snippets.local`, with a unique label of at most 80 allowed characters. Reopen the picker after editing it. Nested files, linked files/folders, invalid UTF-8, malformed tokens and exceeded limits are excluded. The picker lists loading errors.
+Use a top-level UTF-8 `.txt` file in `snippets.local`. The label must start with an ASCII letter or digit and contain at most 80 characters. Remaining characters may be ASCII letters, digits, spaces, underscores or hyphens. Labels are compared case-insensitively across both folders. Reopen the picker after editing it. Nested files, Windows reparse points, invalid UTF-8, malformed tokens and exceeded limits are excluded. NTFS hard links are not detected. The picker lists loading errors.
 
 ## Excel changes the pasted result
 

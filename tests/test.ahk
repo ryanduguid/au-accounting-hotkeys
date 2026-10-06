@@ -51,6 +51,8 @@ try {
         TestKeyboardInput()
         TestPickerKeyboard()
         TestPickerHotkeyScope()
+        TestPickerManualLimits()
+        TestPickerTargetBoundary()
     }
     FileAppend("PASS: " checks " checks`n", "*")
     ExitApp(0)
@@ -61,7 +63,7 @@ try {
 
 AssertEqual(actual, expected, description) {
     global checks
-    if actual != expected
+    if Type(actual) !== Type(expected) || actual !== expected
         throw Error(description ": expected '" expected "', got '" actual "'.")
     checks += 1
 }

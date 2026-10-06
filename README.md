@@ -107,13 +107,15 @@ Configuration examples: [Excel and Word](examples/excel-word.ini), or [picker on
 
 ## Customise snippets
 
-Bundled drafts live in `snippets`. To keep your own wording local, create a `snippets.local` directory beside the script and put UTF-8 `.txt` files in it. Start with [Custom-snippet.txt](examples/Custom-snippet.txt). Filenames become labels and must use letters, digits, spaces, underscores or hyphens, with at most 80 characters. Use a unique label across both folders.
+Bundled drafts live in `snippets`. To keep your own wording local, create a `snippets.local` directory beside the script and put UTF-8 `.txt` files in it. Start with [Custom-snippet.txt](examples/Custom-snippet.txt). Filenames become labels and must start with an ASCII letter or digit. Remaining characters may be ASCII letters, digits, spaces, underscores or hyphens, with at most 80 characters in total. Labels are compared case-insensitively; use a unique label across both folders.
 
-The picker takes a fresh snapshot when it opens. It loads only top-level text files, rejects linked folders/files and never writes to snippets. Invalid files are excluded with a visible explanation, while the original shortcuts remain available.
+The picker takes a fresh snapshot when it opens. It loads only top-level text files, rejects Windows reparse points such as symbolic links and junctions, and never writes to snippets. NTFS hard links are not detected. Invalid files are excluded with a visible explanation, while the original shortcuts remain available.
 
 Supported date tokens are `{{TODAY_AU}}`, `{{TODAY_ISO}}`, `{{FILE_DATE}}`, `{{FY_START}}`, `{{FY_END}}`, `{{FY_LABEL}}`, `{{FY_RANGE}}`, `{{Q_START}}`, `{{Q_END}}`, `{{Q_RANGE}}` and `{{Q_NUMBER}}`. Token names are case sensitive. Unknown or incomplete tokens are errors; replacement happens once. AutoHotkey-looking text stays text.
 
 Each snippet accepts up to 16,384 characters and 100 tokens. A folder containing more than 100 text files is excluded; the library considers at most 100 files across both folders, with at most 262,144 characters of accepted snippet text. General input and output accept up to 32,768 characters; dates and identifiers accept up to 64. These counts use UTF-16 code units. Oversize results are rejected without truncation. See the catalogue for command-specific limits.
+
+Clipboard size is validated after Windows supplies the text. The limit bounds accepted processing and output, but not the clipboard provider's initial allocation or transfer.
 
 ## Use the date helpers in another script
 

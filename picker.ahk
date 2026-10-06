@@ -120,7 +120,7 @@ class CommandPicker {
         if this.SelectedId = ""
             return
         if this.Selected.Input && this.Input.Value = "" {
-            this.Status.Text := "Input required. Clipboard has not been read for this selection."
+            this.Status.Text := "Input required. Type text here or choose Load clipboard and preview."
             return
         }
         try {
@@ -164,7 +164,7 @@ class CommandPicker {
         output := this.Output
         if LooksLikeFormula(output) && !this.Confirm.Call()
             return false
-        if output != this.Output || !this.CopyButton.Enabled
+        if output !== this.Output || !this.CopyButton.Enabled
             return false
         try {
             this.Write.Call(output)

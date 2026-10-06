@@ -111,10 +111,9 @@ LoadSnippets(directories, context) {
             SplitPath(path, , , , &name)
             try {
                 if !RegExMatch(name, "^[A-Za-z0-9][A-Za-z0-9 _-]{0,79}\z")
-                    throw ValueError("Snippet labels must use letters, digits, spaces, underscores or hyphens.")
+                    throw ValueError("Snippet labels must start with an ASCII letter or digit, use only ASCII letters, digits, spaces, underscores or hyphens, and contain at most 80 characters.")
                 if names.Has(name)
                     throw ValueError("Duplicate snippet label.")
-                names[name] := true
                 if InStr(FileGetAttrib(path), "L")
                     throw ValueError("Linked snippet files are not loaded.")
                 body := ReadUtf8Snippet(path)
@@ -122,6 +121,7 @@ LoadSnippets(directories, context) {
                 if total + StrLen(body) > 262144
                     throw ValueError("Total snippet text exceeds 262,144 characters.")
                 total += StrLen(body)
+                names[name] := true
                 result.Items.Push({Name: name, Body: body})
             } catch Error as problem {
                 result.Errors.Push(name ": " problem.Message)

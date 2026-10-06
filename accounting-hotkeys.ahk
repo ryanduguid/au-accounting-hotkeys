@@ -27,7 +27,7 @@ ReadSettings(path) {
     year := IniRead(path, "Period", "FinancialYearEnding", "2026")
     quarter := IniRead(path, "Period", "Quarter", "4")
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]$")
+    if !RegExMatch(quarter, "^[1-4]\z")
         throw ValueError("Quarter must be 1, 2, 3 or 4.")
 
     applications := []
@@ -39,7 +39,7 @@ ReadSettings(path) {
                 throw ValueError("Applications must not contain empty entries.")
             continue
         }
-        if !RegExMatch(name, "i)^[\w .-]+\.exe$")
+        if !RegExMatch(name, "i)^[\w .-]+\.exe\z")
             throw ValueError("Applications must be executable names, such as EXCEL.EXE.")
         applications.Push(name)
     }
@@ -71,7 +71,7 @@ ReadSettings(path) {
 }
 
 NormaliseHotkey(key) {
-    if !RegExMatch(key, "^([#!+^]*)([A-Za-z0-9]+)$", &parts)
+    if !RegExMatch(key, "^([#!+^]*)([A-Za-z0-9]+)\z", &parts)
         throw ValueError("Use a single key with optional Ctrl (^), Alt (!), Shift (+) or Win (#) modifiers.")
     name := GetKeyName(parts[2])
     if name = ""
@@ -86,7 +86,11 @@ NormaliseHotkey(key) {
     return modifiers name
 }
 
-RegisterHotkeys(settings, openPicker := ShowPicker) {
+RegisterHotkeys(settings) {
+    RegisterHotkeysCore(settings, ShowPicker)
+}
+
+RegisterHotkeysCore(settings, openPicker) {
     commands := Map(
         "YearEnd", (*) => SendText(FinancialYearEnd(settings.Year)),
         "Today", (*) => SendText(AustralianDate()),

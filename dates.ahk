@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 
 ValidateYear(year) {
-    if !RegExMatch(year, "^\d{4}$") || year < 1900 || year > 9999
+    if !RegExMatch(year, "^\d{4}\z") || year < 1900 || year > 9999
         throw ValueError("FinancialYearEnding must be a four-digit year from 1900 to 9999.")
 }
 
@@ -17,7 +17,7 @@ FinancialYearLabel(year) {
 
 QuarterEnd(year, quarter) {
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]$")
+    if !RegExMatch(quarter, "^[1-4]\z")
         throw ValueError("Quarter must be 1, 2, 3 or 4.")
     return ["30/09/", "31/12/", "31/03/", "30/06/"][quarter] (quarter <= 2 ? year - 1 : year)
 }
@@ -37,7 +37,7 @@ FinancialYearRange(year) {
 
 QuarterStart(year, quarter) {
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]$")
+    if !RegExMatch(quarter, "^[1-4]\z")
         throw ValueError("Quarter must be 1, 2, 3 or 4.")
     return ["01/07/", "01/10/", "01/01/", "01/04/"][quarter] (quarter <= 2 ? year - 1 : year)
 }
@@ -55,9 +55,9 @@ FileDate(timestamp := "") {
 }
 
 DaysInMonth(year, month) {
-    if !RegExMatch(year, "^[0-9]{4}$") || year < 1601 || year > 9999
+    if !RegExMatch(year, "^[0-9]{4}\z") || year < 1601 || year > 9999
         throw ValueError("Calendar year must be from 1601 to 9999.")
-    if !RegExMatch(month, "^[0-9]{1,2}$") || month < 1 || month > 12
+    if !RegExMatch(month, "^[0-9]{1,2}\z") || month < 1 || month > 12
         throw ValueError("Month must be from 1 to 12.")
     if month = 2
         return Mod(year, 400) = 0 || (Mod(year, 4) = 0 && Mod(year, 100) != 0) ? 29 : 28
@@ -66,7 +66,7 @@ DaysInMonth(year, month) {
 
 CalendarDate(year, month, day, style := "AU") {
     lastDay := DaysInMonth(year, month)
-    if !RegExMatch(day, "^[0-9]{1,2}$") || day < 1 || day > lastDay
+    if !RegExMatch(day, "^[0-9]{1,2}\z") || day < 1 || day > lastDay
         throw ValueError("Day is outside the selected calendar month.")
     switch style {
         case "AU": return Format("{:02}/{:02}/{:04}", day, month, year)
