@@ -1,0 +1,17 @@
+Records requested for FY {{FY_LABEL}} ({{FY_RANGE}})
+
+Entity/client: [complete]
+Recipient/contact: [complete]
+Response due: [complete]
+Tailoring or exclusions: [complete after review]
+
+Please provide the following for the selected period:
+* Bank and credit card statements, including the statement covering {{FY_END}}.
+* Receivables and payables reports at {{FY_END}}, with notes on disputed or overdue balances.
+* Details of asset purchases, disposals and finance agreements.
+* Stocktake records and the basis of valuation, where applicable.
+* Loan statements and supporting agreements.
+* Payroll and superannuation reconciliation records, where applicable.
+* Details of transactions needing clarification.
+
+Please confirm which items apply and when the records will be available.

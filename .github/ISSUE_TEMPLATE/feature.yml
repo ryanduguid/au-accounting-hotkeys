@@ -1,0 +1,15 @@
+name: Accounting shortcut request
+description: Describe a repeated accounting task and a fabricated example.
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Task and expected result
+      description: Explain the repeated task, how often it occurs and a fabricated input/output example. Include application requirements.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Input and verification
+      description: Describe invalid inputs, period assumptions and how the result should be checked. Do not include client data or secrets.

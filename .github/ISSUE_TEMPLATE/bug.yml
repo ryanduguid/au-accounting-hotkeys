@@ -1,0 +1,17 @@
+name: Bug report
+description: Report a reproducible problem using fabricated data.
+body:
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: Command, input and result
+      description: Include the command, fabricated input, expected result and actual result. Do not include client data or secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and steps
+      description: Include AutoHotkey and Windows versions, application, keyboard layout, relevant settings and reproduction steps.
+    validations:
+      required: true

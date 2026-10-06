@@ -1,0 +1,9 @@
+Loan reconciliation at {{FY_END}}
+Lender and agreement reference: [complete]
+Statement dates and balances: [complete]
+Principal repayments and interest compared with ledger: [complete]
+Fees, refinancing or other changes: [complete]
+Current/non-current classification basis: [complete]
+Differences and proposed adjustments: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

@@ -1,0 +1,10 @@
+Fixed assets review for {{FY_LABEL}}
+Register and ledger sources: [complete]
+Opening balance comparison: [complete]
+Additions and supporting invoices: [complete]
+Disposals and supporting documents: [complete]
+Depreciation basis and calculations reviewed: [complete]
+Closing balance comparison: [complete]
+Differences and proposed adjustments: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

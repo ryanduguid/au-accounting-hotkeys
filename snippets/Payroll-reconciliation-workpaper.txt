@@ -1,0 +1,9 @@
+Payroll reconciliation for {{FY_RANGE}}
+Payroll reports and ledger sources: [complete]
+Gross wages, PAYG withholding and superannuation compared: [complete]
+Payments and liability balances examined: [complete]
+Relevant reporting records compared: [complete]
+Differences, timing items and proposed adjustments: [complete]
+Unresolved queries: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

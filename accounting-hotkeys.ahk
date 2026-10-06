@@ -1,11 +1,11 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
-#Include %A_LineFile%\..\dates.ahk
+#Include %A_LineFile%\..\picker.ahk
 
 if A_LineFile = A_ScriptFullPath {
     try StartHotkeys()
-    catch Error as problem {
-        MsgBox(problem.Message, "AU accounting hotkeys", 16)
+    catch Error as startupFailure {
+        MsgBox(startupFailure.Message, "AU accounting hotkeys", 16)
         ExitApp(1)
     }
 }
@@ -27,7 +27,7 @@ ReadSettings(path) {
     year := IniRead(path, "Period", "FinancialYearEnding", "2026")
     quarter := IniRead(path, "Period", "Quarter", "4")
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]$")
+    if !RegExMatch(quarter, "^[1-4]\z")
         throw ValueError("Quarter must be 1, 2, 3 or 4.")
 
     applications := []
@@ -39,7 +39,7 @@ ReadSettings(path) {
                 throw ValueError("Applications must not contain empty entries.")
             continue
         }
-        if !RegExMatch(name, "i)^[\w .-]+\.exe$")
+        if !RegExMatch(name, "i)^[\w .-]+\.exe\z")
             throw ValueError("Applications must be executable names, such as EXCEL.EXE.")
         applications.Push(name)
     }
@@ -47,7 +47,16 @@ ReadSettings(path) {
     keys := Map()
     used := Map()
     used.CaseSense := "Off"
-    defaults := Map("YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y")
+    defaults := Map()
+    defaults.CaseSense := "Off"
+    defaults.Set("YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", "")
+    for line in StrSplit(IniRead(path, "Hotkeys", , ""), "`n", "`r") {
+        if !InStr(line, "=")
+            continue
+        configured := Trim(SubStr(line, 1, InStr(line, "=") - 1))
+        if !defaults.Has(configured)
+            throw ValueError("Unknown hotkey command: " configured)
+    }
     for command, defaultKey in defaults {
         key := Trim(IniRead(path, "Hotkeys", command, defaultKey))
         if key != "" {
@@ -62,7 +71,7 @@ ReadSettings(path) {
 }
 
 NormaliseHotkey(key) {
-    if !RegExMatch(key, "^([#!+^]*)([A-Za-z0-9]+)$", &parts)
+    if !RegExMatch(key, "^([#!+^]*)([A-Za-z0-9]+)\z", &parts)
         throw ValueError("Use a single key with optional Ctrl (^), Alt (!), Shift (+) or Win (#) modifiers.")
     name := GetKeyName(parts[2])
     if name = ""
@@ -78,11 +87,16 @@ NormaliseHotkey(key) {
 }
 
 RegisterHotkeys(settings) {
+    RegisterHotkeysCore(settings, ShowPicker)
+}
+
+RegisterHotkeysCore(settings, openPicker) {
     commands := Map(
         "YearEnd", (*) => SendText(FinancialYearEnd(settings.Year)),
         "Today", (*) => SendText(AustralianDate()),
         "QuarterEnd", (*) => SendText(QuarterEnd(settings.Year, settings.Quarter)),
-        "FinancialYear", (*) => SendText(FinancialYearLabel(settings.Year))
+        "FinancialYear", (*) => SendText(FinancialYearLabel(settings.Year)),
+        "Picker", (*) => openPicker.Call(settings)
     )
     HotIf((*) => IsAllowedApplication(settings.Applications))
     try {
@@ -94,6 +108,8 @@ RegisterHotkeys(settings) {
 }
 
 IsAllowedApplication(applications) {
+    if CommandPicker.ActiveHwnd && WinActive("ahk_id " CommandPicker.ActiveHwnd)
+        return false
     if applications.Length = 0
         return true
     for name in applications {

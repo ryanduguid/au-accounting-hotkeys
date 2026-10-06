@@ -1,0 +1,9 @@
+Receivables review at {{FY_END}}
+Aged report source and date: [complete]
+Total compared with ledger: [complete]
+Subsequent receipts examined: [complete]
+Disputed, overdue or related-party balances: [complete]
+Supporting evidence and proposed treatment: [complete]
+Unresolved queries: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

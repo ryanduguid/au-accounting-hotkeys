@@ -1,0 +1,9 @@
+Transaction query for FY {{FY_LABEL}}
+Date: [complete]
+Description and amount: [complete]
+Account/source reference: [complete]
+
+Please confirm the purpose of this transaction and provide its supporting document. Where the transaction contains both business and private use, please provide the information supporting that split.
+
+Response and supporting references: [complete]
+Treatment and review status: [complete after assessment]

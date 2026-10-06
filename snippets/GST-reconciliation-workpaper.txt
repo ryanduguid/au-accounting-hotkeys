@@ -1,0 +1,10 @@
+GST reconciliation for {{Q_RANGE}}
+Ledger and report sources: [complete]
+Accounting/reporting basis used: [complete]
+Opening balances and prior-period items: [complete]
+Amounts compared with activity statement records: [complete]
+Timing differences and adjustments: [complete]
+Supporting tax invoice references: [complete]
+Unresolved differences: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

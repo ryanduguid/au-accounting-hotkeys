@@ -1,0 +1,9 @@
+Proposed journal support for FY {{FY_LABEL}}
+Journal date and reference: [complete]
+Purpose: [complete]
+Source documents: [complete]
+Accounts, debit/credit amounts and tax treatment: [complete]
+Calculation and reasoning: [complete]
+Effect on balances and reporting: [complete]
+Approval required and obtained: [complete]
+Posting/review status: [complete]
