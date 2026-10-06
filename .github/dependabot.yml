@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # The scripts have no package manifest, so only the pinned workflow actions
+  # need updates. The AutoHotkey runtime is pinned by URL and SHA-256 in
+  # check.yml and is moved by hand.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
