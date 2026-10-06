@@ -1,0 +1,9 @@
+Payables review at {{FY_END}}
+Aged report source and date: [complete]
+Total compared with ledger: [complete]
+Supplier statements and subsequent payments examined: [complete]
+Unrecorded liabilities or unusual debit balances: [complete]
+Supporting evidence and proposed treatment: [complete]
+Unresolved queries: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

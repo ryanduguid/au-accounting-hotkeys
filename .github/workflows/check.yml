@@ -8,8 +8,12 @@ permissions:
   contents: read
 
 jobs:
-  dates-and-settings:
+  library:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ['64', '32']
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -23,8 +27,8 @@ jobs:
           $actual = (Get-FileHash '.tools/AutoHotkey.zip' -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -cne $expected) { throw 'AutoHotkey archive checksum mismatch.' }
           Expand-Archive -LiteralPath '.tools/AutoHotkey.zip' -DestinationPath '.tools/AutoHotkey'
-      - name: Check dates and configuration
+      - name: Check helpers, settings, snippets and picker boundaries
         shell: pwsh
         run: |
-          & './tests/run.ps1' -AutoHotkey './.tools/AutoHotkey/AutoHotkey64.exe'
+          & './tests/run.ps1' -AutoHotkey './.tools/AutoHotkey/AutoHotkey${{ matrix.architecture }}.exe'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

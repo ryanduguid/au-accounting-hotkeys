@@ -1,6 +1,8 @@
 #Requires AutoHotkey v2.0
 #Warn All, StdOut
 #Include %A_ScriptDir%\..\accounting-hotkeys.ahk
+#Include %A_ScriptDir%\expanded.ahk
+#SingleInstance Off
 
 checks := 0
 try {
@@ -44,12 +46,16 @@ try {
     AssertValueError(() => NormaliseHotkey("NoSuchKey123"), "Unknown key rejected")
     AssertValueError(() => NormaliseHotkey("Insert & d"), "Unsupported key combinations rejected")
 
-    if A_Args.Length > 0 && A_Args[1] = "--ui"
+    TestExpanded()
+    if A_Args.Length > 0 && A_Args[1] = "--ui" {
         TestKeyboardInput()
+        TestPickerKeyboard()
+        TestPickerHotkeyScope()
+    }
     FileAppend("PASS: " checks " checks`n", "*")
     ExitApp(0)
-} catch Error as problem {
-    FileAppend("FAIL: " problem.Message "`n", "**")
+} catch Error as testFailure {
+    FileAppend("FAIL: " testFailure.Message "`n" testFailure.Stack "`n", "**")
     ExitApp(1)
 }
 

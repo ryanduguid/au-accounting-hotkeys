@@ -1,11 +1,11 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
-#Include %A_LineFile%\..\dates.ahk
+#Include %A_LineFile%\..\picker.ahk
 
 if A_LineFile = A_ScriptFullPath {
     try StartHotkeys()
-    catch Error as problem {
-        MsgBox(problem.Message, "AU accounting hotkeys", 16)
+    catch Error as startupFailure {
+        MsgBox(startupFailure.Message, "AU accounting hotkeys", 16)
         ExitApp(1)
     }
 }
@@ -47,7 +47,16 @@ ReadSettings(path) {
     keys := Map()
     used := Map()
     used.CaseSense := "Off"
-    defaults := Map("YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y")
+    defaults := Map()
+    defaults.CaseSense := "Off"
+    defaults.Set("YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", "")
+    for line in StrSplit(IniRead(path, "Hotkeys", , ""), "`n", "`r") {
+        if !InStr(line, "=")
+            continue
+        configured := Trim(SubStr(line, 1, InStr(line, "=") - 1))
+        if !defaults.Has(configured)
+            throw ValueError("Unknown hotkey command: " configured)
+    }
     for command, defaultKey in defaults {
         key := Trim(IniRead(path, "Hotkeys", command, defaultKey))
         if key != "" {
@@ -77,12 +86,13 @@ NormaliseHotkey(key) {
     return modifiers name
 }
 
-RegisterHotkeys(settings) {
+RegisterHotkeys(settings, openPicker := ShowPicker) {
     commands := Map(
         "YearEnd", (*) => SendText(FinancialYearEnd(settings.Year)),
         "Today", (*) => SendText(AustralianDate()),
         "QuarterEnd", (*) => SendText(QuarterEnd(settings.Year, settings.Quarter)),
-        "FinancialYear", (*) => SendText(FinancialYearLabel(settings.Year))
+        "FinancialYear", (*) => SendText(FinancialYearLabel(settings.Year)),
+        "Picker", (*) => openPicker.Call(settings)
     )
     HotIf((*) => IsAllowedApplication(settings.Applications))
     try {
@@ -94,6 +104,8 @@ RegisterHotkeys(settings) {
 }
 
 IsAllowedApplication(applications) {
+    if CommandPicker.ActiveHwnd && WinActive("ahk_id " CommandPicker.ActiveHwnd)
+        return false
     if applications.Length = 0
         return true
     for name in applications {

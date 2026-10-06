@@ -1,0 +1,11 @@
+Bank reconciliation at {{FY_END}}
+Account: [complete]
+Statement source and date: [complete]
+Statement closing balance: [complete]
+Outstanding deposits and payments: [complete]
+Ledger balance: [complete]
+Difference: [complete]
+Items requiring investigation: [complete]
+Supporting document references: [complete]
+Work performed and conclusion: [complete after review]
+Prepared/reviewed by and dates: [complete]

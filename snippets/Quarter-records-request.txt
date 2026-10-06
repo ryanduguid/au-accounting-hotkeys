@@ -1,0 +1,5 @@
+Records requested for FY {{FY_LABEL}} Q{{Q_NUMBER}} ({{Q_RANGE}})
+
+Please provide bank statements and transaction records covering {{Q_START}} to {{Q_END}}, together with supporting invoices and payroll records where applicable.
+
+Please identify missing documents, unusual transactions and any changes to the business during the period.
