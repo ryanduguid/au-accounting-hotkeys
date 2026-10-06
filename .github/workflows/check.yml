@@ -1,0 +1,30 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dates-and-settings:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Download verified AutoHotkey v2 runtime
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path .tools -Force | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.29/AutoHotkey_2.0.29.zip' -OutFile '.tools/AutoHotkey.zip'
+          $expected = 'b2d0200724a6b6ad22c965c939c5e5a2c64a35d1ccb455a3ca3f8ce415c5a296'
+          $actual = (Get-FileHash '.tools/AutoHotkey.zip' -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -cne $expected) { throw 'AutoHotkey archive checksum mismatch.' }
+          Expand-Archive -LiteralPath '.tools/AutoHotkey.zip' -DestinationPath '.tools/AutoHotkey'
+      - name: Check dates and configuration
+        shell: pwsh
+        run: |
+          & './tests/run.ps1' -AutoHotkey './.tools/AutoHotkey/AutoHotkey64.exe'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
