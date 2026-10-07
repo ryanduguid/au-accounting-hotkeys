@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this work, cite it with this metadata and the release tag or commit you used."
+title: "AU accounting hotkeys"
+type: software
+authors:
+  - family-names: Duguid
+    given-names: Ryan
+abstract: "Windows AutoHotkey v2 shortcuts for Australian accountants: financial-year dates, a searchable picker of period labels, ABN and ACN formatting, and draft workpaper snippets."
+repository-code: "https://github.com/ryanduguid/au-accounting-hotkeys"
+url: "https://duguid.com.au/"
+license: MIT
+keywords:
+  - accounting
+  - australia
+  - autohotkey
+  - autohotkey-v2
+  - hotkeys
