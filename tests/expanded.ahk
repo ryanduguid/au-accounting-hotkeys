@@ -8,6 +8,7 @@ TestExpanded() {
     TestDateHelpers()
     TestIdentifiersAndText()
     TestCatalogue()
+    TestSnippetSearch()
     TestSnippetLoading()
     TestSnippetLabelsAndRecovery()
     TestSnippetLimits()
@@ -110,6 +111,37 @@ TestIdentifiersAndText() {
     for formulaIndex, formula in ["=1+1", " @SUM(A1:A2)", "a`t+2", "label`r`n - item", Chr(0xA0) "=A1", CSVRow("=1+1,2`nx")]
         AssertEqual(LooksLikeFormula(formula), true, "Formula-like cell recognised " formulaIndex)
     AssertEqual(LooksLikeFormula("ordinary = prose"), false, "Ordinary prose avoids formula warning")
+}
+
+TestSnippetSearch() {
+    body := 'Depreciation schedule {{FY_LABEL}}`nRun("calc.exe") .*[()'
+    command := SnippetCommand({Name: "general-note", Body: body})
+    catalogue := BuiltinCommands()
+    catalogue.Push(command)
+    AssertEqual(FilterCommands(catalogue, "DEPRECIATION").Length, 1, "Search finds text absent from snippet label")
+    AssertEqual(FilterCommands(catalogue, "general SCHEDULE").Length, 1, "Search combines label and body terms")
+    AssertEqual(FilterCommands(catalogue, "schedule missing").Length, 0, "Every body search term must match")
+    AssertEqual(FilterCommands(catalogue, ".*[()").Length, 1, "Snippet body search treats metacharacters literally")
+    AssertEqual(FilterCommands(catalogue, "{{FY_LABEL}}").Length, 1, "Search reads unexpanded snippet tokens")
+    AssertEqual(FilterCommands(catalogue, "QUARTER end").Length, 3, "Built-in search remains available with snippets")
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake, catalogue)
+    try {
+        palette.Search.Value := "depreciation"
+        palette.RefreshList()
+        AssertEqual(palette.SelectedId, "Snippet:general-note", "Body search selects the matching snippet")
+        AssertEqual(fake.Reads + fake.Writes, 0, "Body search leaves the clipboard untouched")
+        expected := StrReplace(body, "{{FY_LABEL}}", "2025-26")
+        AssertEqual(palette.Preview.Value, expected, "Body search previews expanded literal text")
+        AssertEqual(palette.CopyResult(), true, "Body search result can be copied explicitly")
+        AssertEqual(fake.Output, expected, "Copy preserves the reviewed snippet text")
+        AssertEqual(fake.Reads, 0, "Snippet copy does not read the clipboard")
+        AssertEqual(fake.Writes, 1, "Explicit snippet copy writes once")
+        palette.Search.Value := "missing"
+        palette.RefreshList()
+        AssertEqual(palette.CopyResult(), false, "Missing body search cannot copy a stale result")
+        AssertEqual(fake.Writes, 1, "Missing body search does not write")
+    } finally palette.Close()
 }
 
 TestSnippetLimits() {

@@ -32,6 +32,10 @@ ABN and ACN checks establish formatting and checksum properties only. Use [ABN L
 
 [Ozzit](https://github.com/ryanduguid/Ozzit) supplies Excel modelling functions. Financial calculations belong in tools with appropriate numerical checks; the hotkey library handles dates, labels and text preparation.
 
+## Commercial comparison
+
+[TextExpander's snippet search documentation](https://textexpander.com/learn/using/searching-snippets), inspected on 9 October 2026, describes searches across abbreviations, content and labels. This informed literal searches of the snippet text already loaded by the picker. The search uses no external service or command execution. No proprietary source code or snippet collection was copied.
+
 ## Evidence limits
 
 Synthetic Windows tests exercise the library and its native controls. Individual accounting applications, alternate keyboard layouts, remote desktops and firm desktop restrictions need separate checks. The resource comparison does not establish compatibility with them.

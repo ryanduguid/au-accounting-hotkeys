@@ -70,6 +70,8 @@ FilterCommands(commands, query) {
     result := []
     for item in commands {
         haystack := item.Id " " item.Label " " item.Category
+        if item.HasOwnProp("SearchText")
+            haystack .= " " item.SearchText
         matches := true
         for term in terms {
             if term != "" && !InStr(haystack, term) {
@@ -84,7 +86,9 @@ FilterCommands(commands, query) {
 }
 
 SnippetCommand(item) {
-    return MakeCommand("Snippet:" item.Name, StrReplace(item.Name, "-", " "), "Draft snippets", (c, t) => ExpandSnippet(item.Body, c))
+    command := MakeCommand("Snippet:" item.Name, StrReplace(item.Name, "-", " "), "Draft snippets", (c, t) => ExpandSnippet(item.Body, c))
+    command.SearchText := item.Body
+    return command
 }
 
 LoadCommandCatalogue(settings, root := "") {
