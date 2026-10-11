@@ -3,7 +3,7 @@
 
 ParseAmountCents(text) {
     line := Trim(text, " `t" Chr(0xA0))
-    if RegExMatch(line, "i)[0-9)][ `t]*(?:CR|DR)\z")
+    if RegExMatch(line, "i)[0-9)][ `t\x{00A0}]*(?:CR|DR)\z")
         throw ValueError("CR/DR suffix is ambiguous; replace it with an explicit sign.")
     if !RegExMatch(line, "^(?:(-)|(\())?\$?([0-9]{1,12}|[1-9][0-9]{0,2}(?:,[0-9]{3}){1,3})(?:\.([0-9]{1,2}))?(?(2)\))\z", &parts)
         throw ValueError("Use an amount such as 1234.56, -1,234.56 or ($1,234.56), with at most 12 whole-dollar digits and 2 decimal places.")
@@ -11,11 +11,16 @@ ParseAmountCents(text) {
     return parts[1] != "" || parts[2] != "" ? -cents : cents
 }
 
+; Larger amounts exceed the 15 significant digits Excel keeps for numbers. Comparing before
+; any arithmetic also keeps library callers away from 64-bit integer wraparound.
+CheckedCents(cents) {
+    if Type(cents) != "Integer" || cents > 999999999999999 || cents < -999999999999999
+        throw ValueError("Amount must be whole cents within 9,999,999,999,999.99 either side of zero; it was not rounded.")
+    return cents
+}
+
 FormatCents(cents, separators := false) {
-    ; Larger results exceed the 15 significant digits Excel keeps for numbers.
-    if Abs(cents) > 999999999999999
-        throw ValueError("Result exceeds 9,999,999,999,999.99; it was not rounded.")
-    whole := String(Abs(cents) // 100)
+    whole := String(Abs(CheckedCents(cents)) // 100)
     if separators
         whole := RegExReplace(whole, "[0-9](?=(?:[0-9]{3})+\z)", "$0,")
     return (cents < 0 ? "-" : "") whole "." Format("{:02}", Mod(Abs(cents), 100))
@@ -23,7 +28,9 @@ FormatCents(cents, separators := false) {
 
 ; Rounds cents / divisor to the nearest cent, with exact half cents away from zero.
 RoundedShare(cents, divisor) {
-    share := (2 * Abs(cents) + divisor) // (2 * divisor)
+    if Type(divisor) != "Integer" || divisor < 1 || divisor > 100
+        throw ValueError("Divisor must be a whole number from 1 to 100.")
+    share := (2 * Abs(CheckedCents(cents)) + divisor) // (2 * divisor)
     return cents < 0 ? -share : share
 }
 

@@ -205,7 +205,7 @@ TestAmounts() {
         AssertEqual(ParseAmountCents(parsed[1]), parsed[2], "Amount parsed " parsed[1])
     for badAmount in ["1,23.00", "1234,567", "12,34", "0,123", "1.234", ".50", "1.", "--1", "-(1)", "(1", "1)", "$-1", "1 000", "1,234,567,890,123", "1234567890123", "1e3", "0x10", "+1", "AUD 1.00", "1.00 AUD", Chr(0x0661), "", "abc"]
         AssertValueError(ParseAmountCents.Bind(badAmount), "Bad amount rejected " badAmount)
-    for suffixed in ["250.00 CR", "250.00dr", "(250)CR"] {
+    for suffixed in ["250.00 CR", "250.00dr", "(250)CR", "250.00" Chr(0xA0) "CR"] {
         try {
             ParseAmountCents(suffixed)
             throw Error("CR/DR suffix accepted: " suffixed)
@@ -219,6 +219,12 @@ TestAmounts() {
     AssertEqual(FormatCents(99900, true), "999.00", "No separator below a thousand")
     AssertEqual(FormatCents(999999999999999, true), "9,999,999,999,999.99", "Largest Excel-safe result")
     AssertValueError(() => FormatCents(-1000000000000000), "Result beyond Excel precision rejected")
+    for outOfRange in [0x7FFFFFFFFFFFFFFF, -0x7FFFFFFFFFFFFFFF - 1, 1000000000000000, 1.5, "100"] {
+        AssertValueError(FormatCents.Bind(outOfRange), "Formatting rejects cents outside the supported range")
+        AssertValueError(GSTOnExclusive.Bind(outOfRange), "GST rejects cents outside the supported range")
+    }
+    for badDivisor in [0, -10, 101, 0x7FFFFFFFFFFFFFFF, 10.0]
+        AssertValueError(RoundedShare.Bind(100, badDivisor), "Rounding rejects unsupported divisors")
 
     ; GST vectors from the plan review, with half cents rounded away from zero.
     for vector in [["0.04", "0.00", "0.04"], ["0.05", "0.01", "0.06"], ["0.15", "0.02", "0.17"], ["-0.04", "0.00", "-0.04"], ["-0.05", "-0.01", "-0.06"], ["-0.15", "-0.02", "-0.17"], ["100.00", "10.00", "110.00"]] {
