@@ -86,7 +86,7 @@ PrepareFilenameText(text) {
     text := RTrim(text, " .")
     if text = ""
         throw ValueError("Filename text is empty after preparation.")
-    if RegExMatch(text, "i)^(CON|PRN|AUX|NUL|COM[1-9\x{00B9}\x{00B2}\x{00B3}]|LPT[1-9\x{00B9}\x{00B2}\x{00B3}])(?:\.|$)")
+    if RegExMatch(text, "i)^(CON|PRN|AUX|NUL|COM[1-9\x{00B9}\x{00B2}\x{00B3}]|LPT[1-9\x{00B9}\x{00B2}\x{00B3}]) *(?:\.|$)")
         text := "_" text
     return CheckedText(text, 200)
 }

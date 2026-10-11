@@ -22,8 +22,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path .tools -Force | Out-Null
-          Invoke-WebRequest -Uri 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.29/AutoHotkey_2.0.29.zip' -OutFile '.tools/AutoHotkey.zip'
-          $expected = 'b2d0200724a6b6ad22c965c939c5e5a2c64a35d1ccb455a3ca3f8ce415c5a296'
+          Invoke-WebRequest -Uri 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.30/AutoHotkey_2.0.30.zip' -OutFile '.tools/AutoHotkey.zip'
+          $expected = '1e0ece7ecb2d5646e55758150472677996a57f9db5c83d2996d8b47b9e2f31a4'
           $actual = (Get-FileHash '.tools/AutoHotkey.zip' -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -cne $expected) { throw 'AutoHotkey archive checksum mismatch.' }
           Expand-Archive -LiteralPath '.tools/AutoHotkey.zip' -DestinationPath '.tools/AutoHotkey'

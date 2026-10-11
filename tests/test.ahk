@@ -50,6 +50,7 @@ try {
     if A_Args.Length > 0 && A_Args[1] = "--ui" {
         TestKeyboardInput()
         TestPickerKeyboard()
+        TestPickerOwnsDialogs()
         TestPickerHotkeyScope()
         TestPickerManualLimits()
         TestPickerTargetBoundary()

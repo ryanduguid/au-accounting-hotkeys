@@ -96,11 +96,13 @@ TestIdentifiersAndText() {
     AssertEqual(TSVRow("alpha`n beta `n"), "alpha`tbeta", "Lines become TSV row")
     AssertValueError(() => TSVRow("alpha`tvalue`nbeta"), "Existing TSV cells rejected")
     AssertEqual(PrepareFilenameText('June: TB / draft?.xlsx '), "June_ TB _ draft_.xlsx", "Filename punctuation")
-    for device in ["CON", "nul.txt", "COM1.csv", "LPT9", "COM" Chr(0xB9) ".txt", "LPT" Chr(0xB3)] {
+    for device in ["CON", "nul.txt", "COM1.csv", "LPT9", "COM" Chr(0xB9) ".txt", "LPT" Chr(0xB3), "CON .txt", "Aux .tar.gz"] {
         prepared := PrepareFilenameText(device)
         AssertEqual(prepared, "_" device, "Windows reserved name")
         AssertEqual(PrepareFilenameText(prepared), prepared, "Filename preparation idempotent")
     }
+    for ordinary in ["CONX .txt", "CON notes.txt", "Console.txt"]
+        AssertEqual(PrepareFilenameText(ordinary), ordinary, "Ordinary name beginning with a device name")
     AssertEqual(PrepareFilenameText("  Name... "), "Name", "Trailing filename dots removed")
     AssertValueError(() => PrepareFilenameText("..."), "Empty filename result rejected")
     AssertValueError(() => PrepareFilenameText(RepeatText("a", 201)), "Filename length limit")
@@ -492,6 +494,40 @@ TestPickerKeyboard() {
         AssertEqual(fake.Output, "2024-02-29", "Native copy button invokes fake writer")
         AssertEqual(IsAllowedApplication([]), false, "Direct hotkeys suppressed inside picker")
     } finally palette.Close()
+}
+
+TestPickerOwnsDialogs() {
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    seen := {Owner: 0, Allowed: ""}
+    palette.Confirm := ConfirmWithInspectedDialog.Bind(seen)
+    try {
+        palette.Show()
+        if !WinWaitActive("ahk_id " palette.Window.Hwnd, , 3)
+            throw Error("Synthetic dialog-test picker could not receive focus.")
+        ChooseCommand(palette, "TrimText")
+        palette.Input.Value := "=1+1"
+        palette.RefreshPreview()
+        copied := palette.CopyResult()
+        AssertEqual(seen.Owner, palette.Window.Hwnd, "Formula confirmation is owned by the picker")
+        AssertEqual(seen.Allowed, false, "Direct hotkeys suppressed inside picker dialogs")
+        AssertEqual(copied, false, "Declined confirmation refuses copy")
+        AssertEqual(fake.Writes, 0, "Declined confirmation does not write")
+    } finally palette.Close()
+}
+
+ConfirmWithInspectedDialog(seen) {
+    SetTimer(InspectActiveDialog.Bind(seen), -300)
+    return MsgBox("Fabricated confirmation", "AU hotkeys: dialog test", "YesNo T3") = "Yes"
+}
+
+InspectActiveDialog(seen) {
+    dialog := WinActive("AU hotkeys: dialog test")
+    if dialog {
+        seen.Owner := DllCall("GetWindow", "Ptr", dialog, "UInt", 4, "Ptr") ; GW_OWNER
+        seen.Allowed := IsAllowedApplication([])
+        PostMessage(0x111, 7, 0, , dialog) ; WM_COMMAND IDNO declines the confirmation.
+    }
 }
 
 ReplaceNativeEdit(control, text) {

@@ -44,7 +44,7 @@ Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed ap
 4. Review the preview, then choose **Copy result**. Copy uses that exact result, even if the clipboard changes afterwards.
 5. Paste into the intended destination yourself. Copy replaces the clipboard; the picker does not type into another window.
 
-Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The four typing shortcuts are suppressed while the picker is active.
+Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The four typing shortcuts are suppressed while the picker or one of its dialogs is active.
 
 Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation before copying. This is a warning, not a guarantee about spreadsheet interpretation. Format destination cells as Text when dates or leading-zero identifiers must remain exact. Clipboard history, synchronisation and remote-desktop policies may retain copied text; follow your firm's policy.
 
@@ -150,7 +150,7 @@ For a portable or differently located runtime, pass `-AutoHotkey 'C:\path\to\Aut
 
 The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all four shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
 
-GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.29 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
+GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
 ## Contribute
 
