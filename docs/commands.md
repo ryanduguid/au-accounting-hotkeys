@@ -18,6 +18,7 @@ Search uses literal, case-insensitive terms across the identifier, label and cat
 | `YearStartISO` | ISO start date | `2025-07-01` |
 | `YearEndFile` | Compact end date | `20260630` |
 | `PreviousYearEnd` | Previous year end | `30/06/2025` |
+| `FYMonthEnds` | The 12 month ends, one per line | `31/07/2025` to `30/06/2026` |
 | `QuarterEnd` | Selected quarter end | `30/06/2026` |
 | `QuarterStart` | Selected quarter start | `01/04/2026` |
 | `QuarterRange` | Selected quarter range | `01/04/2026 to 30/06/2026` |
@@ -53,8 +54,12 @@ Accepts exactly `dd/MM/yyyy`, `yyyy-MM-dd` or `yyyyMMdd`, with a calendar year f
 | `MonthEnd` | `01/02/2024` | `29/02/2024` |
 | `MonthRange` | `29/02/2024` | `01/02/2024 to 29/02/2024` |
 | `MonthLabel` | `29/02/2024` | `February 2024` |
+| `PeriodOfDate` | `15/08/2025` | `FY 2025-26 Q1` |
+| `DaysBetween` | `01/07/2025 to 30/06/2026` | `364` |
 
-Month commands use the input date's calendar month. They do not infer an accounting month from the selected quarter.
+Month commands use the input date's calendar month. They do not infer an accounting month from the selected quarter. `PeriodOfDate` uses the same 30 June financial year and quarters as the selected-period commands.
+
+`DaysBetween` takes two dates, either on separate lines or joined by `to`, so a copied `YearRange` or `QuarterRange` result works as input. It returns the second date minus the first: the same date gives `0`, and an earlier second date gives a negative number. Add 1 when you need to count both end dates. Input is limited to 200 characters.
 
 ## Identifiers
 
@@ -80,10 +85,14 @@ Input and output are limited to 32,768 UTF-16 code units. NUL, backspace, DEL an
 | `CollapseSpaces` | Trims each line and collapses repeated horizontal whitespace; preserves line boundaries. |
 | `SingleLine` | Collapses whitespace and joins text into one trimmed line. |
 | `LineEndings` | Converts CRLF and CR to LF. |
+| `RemoveBlankLines` | Removes lines containing only spaces, tabs or non-breaking spaces; keeps other lines exactly. |
+| `NumberLines` | Trims lines, discards blank lines and numbers the rest as `1. first`. |
 | `UniqueLines` | Trims lines, discards blank lines and keeps the first exact-case occurrence. |
 | `SortLines` | Trims lines, discards blank lines and sorts case sensitively; preserves duplicates. |
 | `Uppercase` | Converts text to uppercase. |
 | `Lowercase` | Converts text to lowercase. |
+| `TitleCase` | Capitalises the first letter of each word and lowercases the rest, so `GST` becomes `Gst`. |
+| `QuotedList` | Trims non-empty lines into `'first', 'second'`, doubling embedded single quotes. |
 | `CSVRow` | Trims non-empty lines into a comma-separated row; quotes fields containing commas or quotes and doubles embedded quotes. |
 | `TSVRow` | Trims non-empty lines into a tab-separated row; rejects input lines that already contain tabs. |
 | `Filename` | Joins text into one line, replaces forbidden punctuation with underscores, removes trailing spaces/full stops and prefixes reserved Windows device names with an underscore. Limits the result to 200 characters. |

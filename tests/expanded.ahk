@@ -67,6 +67,21 @@ TestDateHelpers() {
     AssertValueError(() => DaysInMonth(2026, 13), "Month 13 rejected")
     AssertValueError(() => DaysInMonth(2026, 2.5), "Fractional month rejected")
     AssertValueError(() => CalendarDate(2026, 1, 1, "Other"), "Unknown output date style")
+    AssertEqual(FinancialYearMonthEnds(2024), "31/07/2023`n31/08/2023`n30/09/2023`n31/10/2023`n30/11/2023`n31/12/2023`n31/01/2024`n29/02/2024`n31/03/2024`n30/04/2024`n31/05/2024`n30/06/2024", "FY month ends with leap February")
+    AssertEqual(InStr(FinancialYearMonthEnds(1900), "28/02/1900") > 0, true, "Century non-leap February month end")
+    AssertValueError(() => FinancialYearMonthEnds(1899), "FY month ends year range")
+    AssertEqual(DaysBetween("01/07/2025 to 30/06/2026"), "364", "Days across a financial year")
+    AssertEqual(DaysBetween(QuarterRange(2026, 1)), "91", "Days in a pasted quarter range")
+    AssertEqual(DaysBetween(" 2024-02-28`r`n`r`n20240301 "), "2", "Days across a leap day, one date per line")
+    AssertEqual(DaysBetween("01/03/2024 TO 28/02/2024"), "-2", "Earlier second date gives negative days")
+    AssertEqual(DaysBetween("31/12/2025 to 31/12/2025"), "0", "Same date gives zero days")
+    for badRange in ["2024-02-29", "2024-02-30 to 2024-03-01", "01/01/2024 to 02/01/2024 to 03/01/2024", "01/01/2024 - 02/01/2024", "01/01/2024`n02/01/2024`n03/01/2024"]
+        AssertValueError(DaysBetween.Bind(badRange), "Bad day count input rejected")
+    AssertValueError(() => DaysBetween(RepeatText(" ", 201)), "Day count length cap")
+    periods := [["01/07/2025", "FY 2025-26 Q1"], ["30/09/2025", "FY 2025-26 Q1"], ["01/10/2025", "FY 2025-26 Q2"], ["31/12/2025", "FY 2025-26 Q2"], ["2026-01-01", "FY 2025-26 Q3"], ["31/03/2026", "FY 2025-26 Q3"], ["01/04/2026", "FY 2025-26 Q4"], ["20260630", "FY 2025-26 Q4"], ["30/06/1900", "FY 1899-00 Q4"]]
+    for period in periods
+        AssertEqual(PeriodOfDate(period[1]), period[2], "Period of " period[1])
+    AssertValueError(() => PeriodOfDate("01/07/9999"), "Period beyond supported years rejected")
 }
 
 TestIdentifiersAndText() {
@@ -95,6 +110,10 @@ TestIdentifiersAndText() {
     AssertEqual(CSVRow('alpha`nb,eta`nq"uote'), 'alpha,"b,eta","q""uote"', "CSV field quoting")
     AssertEqual(TSVRow("alpha`n beta `n"), "alpha`tbeta", "Lines become TSV row")
     AssertValueError(() => TSVRow("alpha`tvalue`nbeta"), "Existing TSV cells rejected")
+    AssertEqual(RemoveBlankLines(" a `r`n`r`n `t" Chr(0xA0) "`nb"), " a `nb", "Blank lines removed, other lines kept exactly")
+    AssertValueError(() => RemoveBlankLines(" `n`t"), "Only blank lines rejected")
+    AssertEqual(NumberedLines("alpha`n`n beta "), "1. alpha`n2. beta", "Non-empty lines numbered")
+    AssertEqual(QuotedList("O'Brien`n`n Smith "), "'O''Brien', 'Smith'", "Quoted list doubles quotes")
     AssertEqual(PrepareFilenameText('June: TB / draft?.xlsx '), "June_ TB _ draft_.xlsx", "Filename punctuation")
     for device in ["CON", "nul.txt", "COM1.csv", "LPT9", "COM" Chr(0xB9) ".txt", "LPT" Chr(0xB3), "CON .txt", "Aux .tar.gz"] {
         prepared := PrepareFilenameText(device)
@@ -183,10 +202,12 @@ TestSnippetLimits() {
 TestCatalogue() {
     context := {Year: 2026, Quarter: 1, Timestamp: "20240229000000"}
     identifiers := Map()
+    samples := Map("DaysBetween", "2024-02-29 to 2024-03-31")
     for entry in BuiltinCommands() {
         AssertEqual(identifiers.Has(entry.Id), false, "Unique command identifier")
         identifiers[entry.Id] := true
-        sample := entry.Category = "Identifiers" ? (InStr(entry.Id, "ABN") ? "10000000000" : "001234564")
+        sample := samples.Has(entry.Id) ? samples[entry.Id]
+            : entry.Category = "Identifiers" ? (InStr(entry.Id, "ABN") ? "10000000000" : "001234564")
             : entry.Category = "Input dates" ? "2024-02-29" : " alpha `n beta "
         output := ProduceCommand(entry, context, sample)
         AssertEqual(output != "", true, "Every built-in producer runs")
@@ -194,6 +215,8 @@ TestCatalogue() {
             AssertEqual(ProduceCommand(entry, context, "MiXeD text"), "MIXED TEXT", "Uppercase exact output")
         if entry.Id = "Lowercase"
             AssertEqual(ProduceCommand(entry, context, "MiXeD text"), "mixed text", "Lowercase exact output")
+        if entry.Id = "TitleCase"
+            AssertEqual(ProduceCommand(entry, context, "mIXED text"), "Mixed Text", "Title case exact output")
     }
     AssertEqual(FilterCommands(BuiltinCommands(), "QUARTER end").Length, 3, "Search uses case-insensitive terms")
     AssertEqual(FilterCommands(BuiltinCommands(), ".*[()").Length, 0, "Search is literal")
@@ -212,7 +235,7 @@ TestCatalogue() {
     AssertValueError(() => ExpandSnippet(RepeatText("a", 16385), context), "Snippet over character limit")
     catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
-    AssertEqual(catalogue.Commands.Length, 57, "Built-ins and bundled snippets discovered")
+    AssertEqual(catalogue.Commands.Length, 64, "Built-ins and bundled snippets discovered")
     for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
         AssertEqual(InStr(draft.Body, "[complete") > 0, true, "Bundled draft requires completion: " draft.Name)
 }
@@ -557,7 +580,7 @@ TestPickerManualLimits() {
         AssertEqual(palette.CopyButton.Enabled, false, "Oversize native search disables copy")
         ReplaceNativeEdit(palette.Search, RepeatText(" ", 128))
         AssertEqual(StrLen(palette.Search.Value), 128, "At-cap native search is retained completely")
-        AssertEqual(palette.Rows.Length, 45, "At-cap whitespace query still searches the catalogue")
+        AssertEqual(palette.Rows.Length, 52, "At-cap whitespace query still searches the catalogue")
         AssertEqual(fake.Reads + fake.Writes, 0, "Manual entry does not access clipboard")
     } finally palette.Close()
 }
