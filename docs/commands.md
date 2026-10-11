@@ -74,6 +74,26 @@ Accepts digits and ordinary spaces only, up to 64 characters. There must be exac
 
 These are fabricated checksum vectors, with no registration claim. Reports always state `Registry/existence/status: not checked`. They cannot establish identity, registration, active status or GST status. See the [primary sources](resources.md).
 
+## Amounts and GST
+
+Each line holds one Australian dollar amount: an optional leading minus or enclosing brackets for a negative, an optional `$`, at most 12 whole-dollar digits written plain (`1234567`) or with comma groups of three (`1,234,567`), and at most 2 decimal places. Spaces, tabs and non-breaking spaces around the amount are ignored. Anything else is rejected with its line number, and nothing is rounded on input. `CR` and `DR` suffixes are rejected because a credit is negative in a ledger but a deposit on a bank statement; replace them with an explicit sign.
+
+Calculations use whole cents, with no floating point. Per-line commands keep blank lines as blank lines, so a pasted column stays aligned with its rows. Results are limited to 9,999,999,999,999.99, the largest two-decimal amount within the 15 significant digits Excel keeps for numbers.
+
+| Identifier | Input | Output |
+| --- | --- | --- |
+| `AmountsClean` | `($1,234.50)` | `-1234.50` |
+| `AmountsFormat` | `-1234.5` | `-1,234.50` |
+| `AmountsTotal` | `1.10`, `$2.20` and `(0.30)` on three lines | `3.00` |
+| `GSTInInclusive` | `100.00` | `9.09` |
+| `ExclusiveFromInclusive` | `100.00` | `90.91` |
+| `GSTOnExclusive` | `0.05` | `0.01` |
+| `InclusiveFromExclusive` | `0.05` | `0.06` |
+
+GST commands treat each line as one wholly taxable amount at 10%. They do not decide whether a supply is taxable, GST-free or input taxed. GST is rounded to the nearest cent, with half a cent rounded up, as the ATO's [tax invoice guidance](https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices) sets out for an invoice with one taxable sale. Negative amounts round half a cent away from zero, so a reversal cancels its original GST exactly; this symmetry is the library's policy, not a stated ATO rule for adjustment notes. The exclusive amount is the inclusive amount minus the rounded GST, so the two always add back to the input. For an invoice with several taxable sales, apply the ATO's total invoice or taxable sale rule yourself.
+
+Negative results begin with a minus sign, so copying them asks for the spreadsheet formula confirmation described below.
+
 ## Text and filenames
 
 Input and output are limited to 32,768 UTF-16 code units. NUL, backspace, DEL and unsupported ASCII control characters are rejected. Tabs and line endings are accepted where the command allows them. Commands reject an empty transformed result.

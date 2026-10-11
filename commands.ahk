@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#Include %A_LineFile%\..\amounts.ahk
 #Include %A_LineFile%\..\dates.ahk
 #Include %A_LineFile%\..\identifiers.ahk
 #Include %A_LineFile%\..\snippets.ahk
@@ -45,6 +46,13 @@ BuiltinCommands() {
         MakeCommand("ABNCheck", "ABN format and checksum report", "Identifiers", (c, t) => IdentifierReport(t, "ABN"), true, 64),
         MakeCommand("ACNFormat", "Format ACN with spaces", "Identifiers", (c, t) => FormatACN(t), true, 64),
         MakeCommand("ACNCheck", "ACN format and checksum report", "Identifiers", (c, t) => IdentifierReport(t, "ACN"), true, 64),
+        MakeCommand("AmountsClean", "Clean amounts for Excel", "Amounts", (c, t) => AmountLines(t, cents => cents), true),
+        MakeCommand("AmountsFormat", "Format amounts with thousands separators", "Amounts", (c, t) => AmountLines(t, cents => cents, true), true),
+        MakeCommand("AmountsTotal", "Total amounts", "Amounts", (c, t) => TotalAmounts(t), true),
+        MakeCommand("GSTInInclusive", "GST in GST-inclusive amounts", "GST", (c, t) => AmountLines(t, GSTInInclusive), true),
+        MakeCommand("ExclusiveFromInclusive", "GST-exclusive from GST-inclusive amounts", "GST", (c, t) => AmountLines(t, cents => cents - GSTInInclusive(cents)), true),
+        MakeCommand("GSTOnExclusive", "GST on GST-exclusive amounts", "GST", (c, t) => AmountLines(t, GSTOnExclusive), true),
+        MakeCommand("InclusiveFromExclusive", "GST-inclusive from GST-exclusive amounts", "GST", (c, t) => AmountLines(t, cents => cents + GSTOnExclusive(cents)), true),
         MakeCommand("TrimText", "Trim surrounding whitespace", "Text", (c, t) => Trim(CheckedText(t), " `t`r`n" Chr(0xA0)), true),
         MakeCommand("TrimLines", "Trim each line", "Text", (c, t) => TrimLines(t), true),
         MakeCommand("CollapseSpaces", "Collapse spaces within each line", "Text", (c, t) => CollapseHorizontalWhitespace(t), true),

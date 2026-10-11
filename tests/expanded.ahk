@@ -7,6 +7,7 @@ TestExpanded() {
     AssertComparisonRejects(1, "1", "Type-only assertion mismatch fails")
     TestDateHelpers()
     TestIdentifiersAndText()
+    TestAmounts()
     TestCatalogue()
     TestSnippetSearch()
     TestSnippetLoading()
@@ -199,6 +200,65 @@ TestSnippetLimits() {
     }
 }
 
+TestAmounts() {
+    for parsed in [["1234.56", 123456], ["1,234.56", 123456], ["$1,234.56", 123456], ["-$1,234.56", -123456], ["($1,234.56)", -123456], ["(0.50)", -50], ["-0", 0], ["1.5", 150], [" 7`t" Chr(0xA0), 700], ["999,999,999,999.99", 99999999999999], ["999999999999", 99999999999900], ["0012", 1200]]
+        AssertEqual(ParseAmountCents(parsed[1]), parsed[2], "Amount parsed " parsed[1])
+    for badAmount in ["1,23.00", "1234,567", "12,34", "0,123", "1.234", ".50", "1.", "--1", "-(1)", "(1", "1)", "$-1", "1 000", "1,234,567,890,123", "1234567890123", "1e3", "0x10", "+1", "AUD 1.00", "1.00 AUD", Chr(0x0661), "", "abc"]
+        AssertValueError(ParseAmountCents.Bind(badAmount), "Bad amount rejected " badAmount)
+    for suffixed in ["250.00 CR", "250.00dr", "(250)CR"] {
+        try {
+            ParseAmountCents(suffixed)
+            throw Error("CR/DR suffix accepted: " suffixed)
+        } catch ValueError as problem
+            AssertEqual(InStr(problem.Message, "CR/DR suffix is ambiguous") > 0, true, "CR/DR suffix rejected " suffixed)
+    }
+    AssertEqual(FormatCents(0), "0.00", "Zero amount")
+    AssertEqual(FormatCents(-5), "-0.05", "Negative cents")
+    AssertEqual(FormatCents(123456780, true), "1,234,567.80", "Thousands separators")
+    AssertEqual(FormatCents(-100000, true), "-1,000.00", "Negative thousands separators")
+    AssertEqual(FormatCents(99900, true), "999.00", "No separator below a thousand")
+    AssertEqual(FormatCents(999999999999999, true), "9,999,999,999,999.99", "Largest Excel-safe result")
+    AssertValueError(() => FormatCents(-1000000000000000), "Result beyond Excel precision rejected")
+
+    ; GST vectors from the plan review, with half cents rounded away from zero.
+    for vector in [["0.04", "0.00", "0.04"], ["0.05", "0.01", "0.06"], ["0.15", "0.02", "0.17"], ["-0.04", "0.00", "-0.04"], ["-0.05", "-0.01", "-0.06"], ["-0.15", "-0.02", "-0.17"], ["100.00", "10.00", "110.00"]] {
+        AssertEqual(AmountLines(vector[1], GSTOnExclusive), vector[2], "GST on exclusive " vector[1])
+        AssertEqual(AmountLines(vector[1], cents => cents + GSTOnExclusive(cents)), vector[3], "Inclusive from exclusive " vector[1])
+    }
+    for vector in [["1.10", "0.10", "1.00"], ["0.05", "0.00", "0.05"], ["0.06", "0.01", "0.05"], ["100.00", "9.09", "90.91"], ["(100.00)", "-9.09", "-90.91"], ["999,999,999,999.99", "90,909,090,909.09", "909,090,909,090.90"]] {
+        AssertEqual(AmountLines(vector[1], GSTInInclusive, true), vector[2], "GST in inclusive " vector[1])
+        AssertEqual(AmountLines(vector[1], cents => cents - GSTInInclusive(cents), true), vector[3], "Exclusive from inclusive " vector[1])
+    }
+    cents := -2000
+    while cents <= 2000 {
+        for divisor in [10, 11] {
+            share := RoundedShare(cents, divisor)
+            AssertEqual(RoundedShare(-cents, divisor), -share, "Rounding is symmetric")
+            deviation := 2 * (share * divisor - cents)
+            if Abs(deviation) > divisor || (Abs(deviation) = divisor && Abs(share * divisor) < Abs(cents))
+                throw Error("Nearest-cent rounding failed for " cents " / " divisor)
+        }
+        cents += 1
+    }
+
+    AssertEqual(AmountLines("`n1`n `t`n(2)`n", cents => cents), "`n1.00`n`n-2.00`n", "Blank lines keep rows aligned")
+    AssertEqual(AmountLines("1234.5`r`n-1000000", cents => cents, true), "1,234.50`n-1,000,000.00", "Formatted amount lines")
+    AssertValueError(() => AmountLines(" `n`t", cents => cents), "Amount lines need an amount")
+    try {
+        AmountLines("1`n`nfoo", cents => cents)
+        throw Error("Bad amount line accepted.")
+    } catch ValueError as problem
+        AssertEqual(SubStr(problem.Message, 1, 8), "Line 3: ", "Error names the failing line")
+    AssertValueError(() => AmountLines(RepeatText("1`n", 16384), cents => cents), "Oversize amount output rejected, not truncated")
+
+    AssertEqual(TotalAmounts("0.10`n0.20"), "0.30", "Total without binary rounding")
+    AssertEqual(TotalAmounts("1.10`n`n$2.20`n(0.30)`n"), "3.00", "Total skips blank lines")
+    AssertEqual(TotalAmounts(RepeatText("999,999,999,999.99`n", 10)), "9999999999999.90", "Total at Excel precision limit")
+    AssertValueError(() => TotalAmounts(RepeatText("999,999,999,999.99`n", 11)), "Total beyond Excel precision rejected")
+    AssertValueError(() => TotalAmounts("`n "), "Total needs an amount")
+    AssertValueError(() => TotalAmounts("1`n2 CR"), "Total rejects CR/DR")
+}
+
 TestCatalogue() {
     context := {Year: 2026, Quarter: 1, Timestamp: "20240229000000"}
     identifiers := Map()
@@ -208,7 +268,8 @@ TestCatalogue() {
         identifiers[entry.Id] := true
         sample := samples.Has(entry.Id) ? samples[entry.Id]
             : entry.Category = "Identifiers" ? (InStr(entry.Id, "ABN") ? "10000000000" : "001234564")
-            : entry.Category = "Input dates" ? "2024-02-29" : " alpha `n beta "
+            : entry.Category = "Input dates" ? "2024-02-29"
+            : entry.Category = "Amounts" || entry.Category = "GST" ? "1,234.56`n`n(10.00)" : " alpha `n beta "
         output := ProduceCommand(entry, context, sample)
         AssertEqual(output != "", true, "Every built-in producer runs")
         if entry.Id = "Uppercase"
@@ -235,7 +296,7 @@ TestCatalogue() {
     AssertValueError(() => ExpandSnippet(RepeatText("a", 16385), context), "Snippet over character limit")
     catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
-    AssertEqual(catalogue.Commands.Length, 64, "Built-ins and bundled snippets discovered")
+    AssertEqual(catalogue.Commands.Length, 71, "Built-ins and bundled snippets discovered")
     for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
         AssertEqual(InStr(draft.Body, "[complete") > 0, true, "Bundled draft requires completion: " draft.Name)
 }
@@ -580,7 +641,7 @@ TestPickerManualLimits() {
         AssertEqual(palette.CopyButton.Enabled, false, "Oversize native search disables copy")
         ReplaceNativeEdit(palette.Search, RepeatText(" ", 128))
         AssertEqual(StrLen(palette.Search.Value), 128, "At-cap native search is retained completely")
-        AssertEqual(palette.Rows.Length, 52, "At-cap whitespace query still searches the catalogue")
+        AssertEqual(palette.Rows.Length, 59, "At-cap whitespace query still searches the catalogue")
         AssertEqual(fake.Reads + fake.Writes, 0, "Manual entry does not access clipboard")
     } finally palette.Close()
 }

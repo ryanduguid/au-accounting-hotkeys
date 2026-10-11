@@ -50,18 +50,20 @@ Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation befor
 
 ## Command library
 
-The picker includes 45 built-in commands and 12 draft snippets:
+The picker includes 59 built-in commands and 12 draft snippets:
 
 - Copy financial-year and quarter starts, ends, ranges, ISO dates and filename labels.
-- Convert one explicit Australian, ISO or compact date, or find that date's month boundaries.
+- List the selected year's month ends.
+- Convert one explicit Australian, ISO or compact date, find its month boundaries or its financial year and quarter, or count the days between two dates.
+- Clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts.
 - Format ABNs and ACNs without losing leading zeros, and report their format/checksum result.
-- Trim, normalise, sort and deduplicate text, or turn lines into a CSV or tab-separated row.
+- Trim, normalise, number, sort and deduplicate text, or turn lines into a CSV row, a tab-separated row or a quoted list.
 - Prepare a filename component as text, without renaming a file.
 - Start records requests, reconciliation workpapers, journal support notes and review queries from editable drafts.
 
 See the [command catalogue](docs/commands.md) for every command, input rule and example. [Sources and related projects](docs/resources.md) records the inspected repositories, licences and official references.
 
-ABN and ACN reports do not check registration, identity, active status or GST registration. The snippets contain fields to complete and do not establish that a procedure has been performed or a conclusion reached.
+ABN and ACN reports do not check registration, identity, active status or GST registration. GST commands assume each line is wholly taxable at 10%; they do not decide whether a supply is taxable, GST-free or input taxed. The snippets contain fields to complete and do not establish that a procedure has been performed or a conclusion reached.
 
 ## Configure
 

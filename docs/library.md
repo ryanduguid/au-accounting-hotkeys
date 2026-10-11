@@ -36,12 +36,19 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 | `MonthStart(year, month)`, `MonthEnd(year, month)` | Calendar month boundaries in Australian format. |
 | `MonthRange(year, month)`, `MonthLabel(year, month)` | Calendar range or English month label. |
 | `MonthFromDate(text, part)` | Part is Start, End, Range or Label. |
+| `FinancialYearMonthEnds(year)` | The 12 month ends from July to June, one per line. |
+| `PeriodOfDate(text)` | Financial year and quarter label, such as `FY 2025-26 Q1`, for one supported date. |
+| `DaysBetween(text)` | Second date minus first, from two dates on separate lines or joined by ` to `. |
+
+## Amount API
+
+`amounts.ahk` works in integer cents, with no floating point. `ParseAmountCents(text)` accepts one amount with an optional leading minus or enclosing brackets, an optional `$`, at most 12 whole-dollar digits (plain or comma-grouped) and at most 2 decimal places; it throws `ValueError` otherwise, including for CR or DR suffixes. `FormatCents(cents, separators := false)` returns `-1234.56` or `-1,234.56` and rejects results beyond 9,999,999,999,999.99. `RoundedShare(cents, divisor)` rounds to the nearest cent with half cents away from zero; `GSTOnExclusive(cents)` and `GSTInInclusive(cents)` apply it with divisors 10 and 11. `AmountLines(text, transform, separators := false)` applies a transform to each line and keeps blank lines; `TotalAmounts(text)` adds the non-blank lines.
 
 ## Identifier and text API
 
 `FormatABN(text)` and `FormatACN(text)` return spaced digits or throw `ValueError` for malformed input. `ABNChecksumPasses(text)` and `ACNChecksumPasses(text)` return false for malformed input or a failed check. Preserve identifiers as strings, especially ACNs with leading zeros. `IdentifierReport(text, kind)` accepts ABN or ACN and states the registry limitation.
 
-`text.ahk` exposes `CheckedText`, `NormaliseLineEndings`, `TrimLines`, `CollapseHorizontalWhitespace`, `SingleLine`, `UniqueLines`, `SortedLines`, `CSVRow`, `TSVRow`, `PrepareFilenameText` and `LooksLikeFormula`. Their output contracts are in the [catalogue](commands.md#text-and-filenames). `CheckedText` applies the fixed character and control-character limits. Transformation helpers do not read or write files.
+`text.ahk` exposes `CheckedText`, `NormaliseLineEndings`, `TrimLines`, `CollapseHorizontalWhitespace`, `SingleLine`, `RemoveBlankLines`, `NumberedLines`, `QuotedList`, `UniqueLines`, `SortedLines`, `CSVRow`, `TSVRow`, `PrepareFilenameText` and `LooksLikeFormula`. Their output contracts are in the [catalogue](commands.md#text-and-filenames). `CheckedText` applies the fixed character and control-character limits. Transformation helpers do not read or write files.
 
 ## Snippet API
 

@@ -22,7 +22,7 @@ foreach ($vector in $vectors) {
 if (@(Find-BoundaryViolations 'clipboard.ahk' 'A_Clipboard := text').Count -ne 0) { throw 'Clipboard adapter control failed.' }
 
 $root = Split-Path -Parent $PSScriptRoot
-$names = @('accounting-hotkeys.ahk', 'dates.ahk', 'text.ahk', 'identifiers.ahk', 'clipboard.ahk', 'snippets.ahk', 'commands.ahk', 'picker.ahk')
+$names = @('accounting-hotkeys.ahk', 'dates.ahk', 'text.ahk', 'identifiers.ahk', 'clipboard.ahk', 'snippets.ahk', 'commands.ahk', 'picker.ahk', 'amounts.ahk')
 foreach ($name in $names) {
     $source = Get-Content -LiteralPath (Join-Path $root $name) -Raw
     $violations = @(Find-BoundaryViolations $name $source)

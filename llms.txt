@@ -12,7 +12,7 @@ complete and do not establish that a procedure was performed.
 ## Start
 
 - [README](https://github.com/ryanduguid/au-accounting-hotkeys#readme): install AutoHotkey v2, download the repository and run `accounting-hotkeys.ahk`. Insert types the selected financial-year end, for example `30/06/2026`.
-- [Command catalogue](https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/docs/commands.md): the 45 built-in commands and 12 draft snippets, with input rules and examples.
+- [Command catalogue](https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/docs/commands.md): the 59 built-in commands and 12 draft snippets, with input rules and examples.
 - [Sources and related projects](https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/docs/resources.md): inspected repositories, licences and official references.
 
 ## Related
