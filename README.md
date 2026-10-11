@@ -44,24 +44,26 @@ Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed ap
 4. Review the preview, then choose **Copy result**. Copy uses that exact result, even if the clipboard changes afterwards.
 5. Paste into the intended destination yourself. Copy replaces the clipboard; the picker does not type into another window.
 
-Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The four typing shortcuts are suppressed while the picker is active.
+Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The four typing shortcuts are suppressed while the picker or one of its dialogs is active.
 
 Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation before copying. This is a warning, not a guarantee about spreadsheet interpretation. Format destination cells as Text when dates or leading-zero identifiers must remain exact. Clipboard history, synchronisation and remote-desktop policies may retain copied text; follow your firm's policy.
 
 ## Command library
 
-The picker includes 45 built-in commands and 12 draft snippets:
+The picker includes 59 built-in commands and 12 draft snippets:
 
 - Copy financial-year and quarter starts, ends, ranges, ISO dates and filename labels.
-- Convert one explicit Australian, ISO or compact date, or find that date's month boundaries.
+- List the selected year's month ends.
+- Convert one explicit Australian, ISO or compact date, find its month boundaries or its financial year and quarter, or count the days between two dates.
+- Clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts.
 - Format ABNs and ACNs without losing leading zeros, and report their format/checksum result.
-- Trim, normalise, sort and deduplicate text, or turn lines into a CSV or tab-separated row.
+- Trim, normalise, number, sort and deduplicate text, or turn lines into a CSV row, a tab-separated row or a quoted list.
 - Prepare a filename component as text, without renaming a file.
 - Start records requests, reconciliation workpapers, journal support notes and review queries from editable drafts.
 
 See the [command catalogue](docs/commands.md) for every command, input rule and example. [Sources and related projects](docs/resources.md) records the inspected repositories, licences and official references.
 
-ABN and ACN reports do not check registration, identity, active status or GST registration. The snippets contain fields to complete and do not establish that a procedure has been performed or a conclusion reached.
+ABN and ACN reports do not check registration, identity, active status or GST registration. GST commands assume each line is wholly taxable at 10%; they do not decide whether a supply is taxable, GST-free or input taxed. The snippets contain fields to complete and do not establish that a procedure has been performed or a conclusion reached.
 
 ## Configure
 
@@ -150,7 +152,7 @@ For a portable or differently located runtime, pass `-AutoHotkey 'C:\path\to\Aut
 
 The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all four shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
 
-GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.29 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
+GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
 ## Contribute
 

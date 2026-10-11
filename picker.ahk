@@ -50,8 +50,10 @@ class CommandPicker {
         CommandPicker.ActiveHwnd := this.Window.Hwnd
         this.Window.Show()
         this.Search.Focus()
-        if this.LoadErrors.Length
+        if this.LoadErrors.Length {
+            this.Window.Opt("+OwnDialogs")
             MsgBox(JoinLines(this.LoadErrors), "Some snippets were excluded", "Icon!")
+        }
     }
 
     RefreshList() {
@@ -162,6 +164,7 @@ class CommandPicker {
         if !this.CopyButton.Enabled || this.Output = ""
             return false
         output := this.Output
+        this.Window.Opt("+OwnDialogs")
         if LooksLikeFormula(output) && !this.Confirm.Call()
             return false
         if output !== this.Output || !this.CopyButton.Enabled

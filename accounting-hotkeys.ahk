@@ -108,8 +108,12 @@ RegisterHotkeysCore(settings, openPicker) {
 }
 
 IsAllowedApplication(applications) {
-    if CommandPicker.ActiveHwnd && WinActive("ahk_id " CommandPicker.ActiveHwnd)
-        return false
+    if CommandPicker.ActiveHwnd {
+        active := WinActive("A")
+        ; Dialogs owned by the picker, such as the formula confirmation, count as the picker.
+        if active && (active = CommandPicker.ActiveHwnd || DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr") = CommandPicker.ActiveHwnd)
+            return false
+    }
     if applications.Length = 0
         return true
     for name in applications {

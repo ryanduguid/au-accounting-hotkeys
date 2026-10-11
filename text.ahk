@@ -62,6 +62,29 @@ SortedLines(text) {
     return Sort(JoinLines(NonEmptyLines(text)), "C")
 }
 
+RemoveBlankLines(text) {
+    lines := []
+    for line in StrSplit(NormaliseLineEndings(text), "`n") {
+        if Trim(line, " `t" Chr(0xA0)) != ""
+            lines.Push(line)
+    }
+    return JoinLines(lines)
+}
+
+NumberedLines(text) {
+    lines := NonEmptyLines(text)
+    for index, line in lines
+        lines[index] := index ". " line
+    return JoinLines(lines)
+}
+
+QuotedList(text) {
+    items := []
+    for line in NonEmptyLines(text)
+        items.Push("'" StrReplace(line, "'", "''") "'")
+    return JoinLines(items, ", ")
+}
+
 CSVRow(text) {
     fields := []
     for line in NonEmptyLines(text) {
@@ -86,7 +109,7 @@ PrepareFilenameText(text) {
     text := RTrim(text, " .")
     if text = ""
         throw ValueError("Filename text is empty after preparation.")
-    if RegExMatch(text, "i)^(CON|PRN|AUX|NUL|COM[1-9\x{00B9}\x{00B2}\x{00B3}]|LPT[1-9\x{00B9}\x{00B2}\x{00B3}])(?:\.|$)")
+    if RegExMatch(text, "i)^(CON|PRN|AUX|NUL|COM[1-9\x{00B9}\x{00B2}\x{00B3}]|LPT[1-9\x{00B9}\x{00B2}\x{00B3}]) *(?:\.|$)")
         text := "_" text
     return CheckedText(text, 200)
 }

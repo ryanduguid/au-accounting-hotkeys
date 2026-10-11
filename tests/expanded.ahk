@@ -7,6 +7,7 @@ TestExpanded() {
     AssertComparisonRejects(1, "1", "Type-only assertion mismatch fails")
     TestDateHelpers()
     TestIdentifiersAndText()
+    TestAmounts()
     TestCatalogue()
     TestSnippetSearch()
     TestSnippetLoading()
@@ -67,6 +68,21 @@ TestDateHelpers() {
     AssertValueError(() => DaysInMonth(2026, 13), "Month 13 rejected")
     AssertValueError(() => DaysInMonth(2026, 2.5), "Fractional month rejected")
     AssertValueError(() => CalendarDate(2026, 1, 1, "Other"), "Unknown output date style")
+    AssertEqual(FinancialYearMonthEnds(2024), "31/07/2023`n31/08/2023`n30/09/2023`n31/10/2023`n30/11/2023`n31/12/2023`n31/01/2024`n29/02/2024`n31/03/2024`n30/04/2024`n31/05/2024`n30/06/2024", "FY month ends with leap February")
+    AssertEqual(InStr(FinancialYearMonthEnds(1900), "28/02/1900") > 0, true, "Century non-leap February month end")
+    AssertValueError(() => FinancialYearMonthEnds(1899), "FY month ends year range")
+    AssertEqual(DaysBetween("01/07/2025 to 30/06/2026"), "364", "Days across a financial year")
+    AssertEqual(DaysBetween(QuarterRange(2026, 1)), "91", "Days in a pasted quarter range")
+    AssertEqual(DaysBetween(" 2024-02-28`r`n`r`n20240301 "), "2", "Days across a leap day, one date per line")
+    AssertEqual(DaysBetween("01/03/2024 TO 28/02/2024"), "-2", "Earlier second date gives negative days")
+    AssertEqual(DaysBetween("31/12/2025 to 31/12/2025"), "0", "Same date gives zero days")
+    for badRange in ["2024-02-29", "2024-02-30 to 2024-03-01", "01/01/2024 to 02/01/2024 to 03/01/2024", "01/01/2024 - 02/01/2024", "01/01/2024`n02/01/2024`n03/01/2024"]
+        AssertValueError(DaysBetween.Bind(badRange), "Bad day count input rejected")
+    AssertValueError(() => DaysBetween(RepeatText(" ", 201)), "Day count length cap")
+    periods := [["01/07/2025", "FY 2025-26 Q1"], ["30/09/2025", "FY 2025-26 Q1"], ["01/10/2025", "FY 2025-26 Q2"], ["31/12/2025", "FY 2025-26 Q2"], ["2026-01-01", "FY 2025-26 Q3"], ["31/03/2026", "FY 2025-26 Q3"], ["01/04/2026", "FY 2025-26 Q4"], ["20260630", "FY 2025-26 Q4"], ["30/06/1900", "FY 1899-00 Q4"]]
+    for period in periods
+        AssertEqual(PeriodOfDate(period[1]), period[2], "Period of " period[1])
+    AssertValueError(() => PeriodOfDate("01/07/9999"), "Period beyond supported years rejected")
 }
 
 TestIdentifiersAndText() {
@@ -95,12 +111,18 @@ TestIdentifiersAndText() {
     AssertEqual(CSVRow('alpha`nb,eta`nq"uote'), 'alpha,"b,eta","q""uote"', "CSV field quoting")
     AssertEqual(TSVRow("alpha`n beta `n"), "alpha`tbeta", "Lines become TSV row")
     AssertValueError(() => TSVRow("alpha`tvalue`nbeta"), "Existing TSV cells rejected")
+    AssertEqual(RemoveBlankLines(" a `r`n`r`n `t" Chr(0xA0) "`nb"), " a `nb", "Blank lines removed, other lines kept exactly")
+    AssertValueError(() => RemoveBlankLines(" `n`t"), "Only blank lines rejected")
+    AssertEqual(NumberedLines("alpha`n`n beta "), "1. alpha`n2. beta", "Non-empty lines numbered")
+    AssertEqual(QuotedList("O'Brien`n`n Smith "), "'O''Brien', 'Smith'", "Quoted list doubles quotes")
     AssertEqual(PrepareFilenameText('June: TB / draft?.xlsx '), "June_ TB _ draft_.xlsx", "Filename punctuation")
-    for device in ["CON", "nul.txt", "COM1.csv", "LPT9", "COM" Chr(0xB9) ".txt", "LPT" Chr(0xB3)] {
+    for device in ["CON", "nul.txt", "COM1.csv", "LPT9", "COM" Chr(0xB9) ".txt", "LPT" Chr(0xB3), "CON .txt", "Aux .tar.gz"] {
         prepared := PrepareFilenameText(device)
         AssertEqual(prepared, "_" device, "Windows reserved name")
         AssertEqual(PrepareFilenameText(prepared), prepared, "Filename preparation idempotent")
     }
+    for ordinary in ["CONX .txt", "CON notes.txt", "Console.txt"]
+        AssertEqual(PrepareFilenameText(ordinary), ordinary, "Ordinary name beginning with a device name")
     AssertEqual(PrepareFilenameText("  Name... "), "Name", "Trailing filename dots removed")
     AssertValueError(() => PrepareFilenameText("..."), "Empty filename result rejected")
     AssertValueError(() => PrepareFilenameText(RepeatText("a", 201)), "Filename length limit")
@@ -178,20 +200,90 @@ TestSnippetLimits() {
     }
 }
 
+TestAmounts() {
+    for parsed in [["1234.56", 123456], ["1,234.56", 123456], ["$1,234.56", 123456], ["-$1,234.56", -123456], ["($1,234.56)", -123456], ["(0.50)", -50], ["-0", 0], ["1.5", 150], [" 7`t" Chr(0xA0), 700], ["999,999,999,999.99", 99999999999999], ["999999999999", 99999999999900], ["0012", 1200]]
+        AssertEqual(ParseAmountCents(parsed[1]), parsed[2], "Amount parsed " parsed[1])
+    for badAmount in ["1,23.00", "1234,567", "12,34", "0,123", "1.234", ".50", "1.", "--1", "-(1)", "(1", "1)", "$-1", "1 000", "1,234,567,890,123", "1234567890123", "1e3", "0x10", "+1", "AUD 1.00", "1.00 AUD", Chr(0x0661), "", "abc"]
+        AssertValueError(ParseAmountCents.Bind(badAmount), "Bad amount rejected " badAmount)
+    for suffixed in ["250.00 CR", "250.00dr", "(250)CR", "250.00" Chr(0xA0) "CR"] {
+        try {
+            ParseAmountCents(suffixed)
+            throw Error("CR/DR suffix accepted: " suffixed)
+        } catch ValueError as problem
+            AssertEqual(InStr(problem.Message, "CR/DR suffix is ambiguous") > 0, true, "CR/DR suffix rejected " suffixed)
+    }
+    AssertEqual(FormatCents(0), "0.00", "Zero amount")
+    AssertEqual(FormatCents(-5), "-0.05", "Negative cents")
+    AssertEqual(FormatCents(123456780, true), "1,234,567.80", "Thousands separators")
+    AssertEqual(FormatCents(-100000, true), "-1,000.00", "Negative thousands separators")
+    AssertEqual(FormatCents(99900, true), "999.00", "No separator below a thousand")
+    AssertEqual(FormatCents(999999999999999, true), "9,999,999,999,999.99", "Largest Excel-safe result")
+    AssertValueError(() => FormatCents(-1000000000000000), "Result beyond Excel precision rejected")
+    for outOfRange in [0x7FFFFFFFFFFFFFFF, -0x7FFFFFFFFFFFFFFF - 1, 1000000000000000, 1.5, "100"] {
+        AssertValueError(FormatCents.Bind(outOfRange), "Formatting rejects cents outside the supported range")
+        AssertValueError(GSTOnExclusive.Bind(outOfRange), "GST rejects cents outside the supported range")
+    }
+    for badDivisor in [0, -10, 101, 0x7FFFFFFFFFFFFFFF, 10.0]
+        AssertValueError(RoundedShare.Bind(100, badDivisor), "Rounding rejects unsupported divisors")
+
+    ; GST vectors from the plan review, with half cents rounded away from zero.
+    for vector in [["0.04", "0.00", "0.04"], ["0.05", "0.01", "0.06"], ["0.15", "0.02", "0.17"], ["-0.04", "0.00", "-0.04"], ["-0.05", "-0.01", "-0.06"], ["-0.15", "-0.02", "-0.17"], ["100.00", "10.00", "110.00"]] {
+        AssertEqual(AmountLines(vector[1], GSTOnExclusive), vector[2], "GST on exclusive " vector[1])
+        AssertEqual(AmountLines(vector[1], cents => cents + GSTOnExclusive(cents)), vector[3], "Inclusive from exclusive " vector[1])
+    }
+    for vector in [["1.10", "0.10", "1.00"], ["0.05", "0.00", "0.05"], ["0.06", "0.01", "0.05"], ["100.00", "9.09", "90.91"], ["(100.00)", "-9.09", "-90.91"], ["999,999,999,999.99", "90,909,090,909.09", "909,090,909,090.90"]] {
+        AssertEqual(AmountLines(vector[1], GSTInInclusive, true), vector[2], "GST in inclusive " vector[1])
+        AssertEqual(AmountLines(vector[1], cents => cents - GSTInInclusive(cents), true), vector[3], "Exclusive from inclusive " vector[1])
+    }
+    cents := -2000
+    while cents <= 2000 {
+        for divisor in [10, 11] {
+            share := RoundedShare(cents, divisor)
+            AssertEqual(RoundedShare(-cents, divisor), -share, "Rounding is symmetric")
+            deviation := 2 * (share * divisor - cents)
+            if Abs(deviation) > divisor || (Abs(deviation) = divisor && Abs(share * divisor) < Abs(cents))
+                throw Error("Nearest-cent rounding failed for " cents " / " divisor)
+        }
+        cents += 1
+    }
+
+    AssertEqual(AmountLines("`n1`n `t`n(2)`n", cents => cents), "`n1.00`n`n-2.00`n", "Blank lines keep rows aligned")
+    AssertEqual(AmountLines("1234.5`r`n-1000000", cents => cents, true), "1,234.50`n-1,000,000.00", "Formatted amount lines")
+    AssertValueError(() => AmountLines(" `n`t", cents => cents), "Amount lines need an amount")
+    try {
+        AmountLines("1`n`nfoo", cents => cents)
+        throw Error("Bad amount line accepted.")
+    } catch ValueError as problem
+        AssertEqual(SubStr(problem.Message, 1, 8), "Line 3: ", "Error names the failing line")
+    AssertValueError(() => AmountLines(RepeatText("1`n", 16384), cents => cents), "Oversize amount output rejected, not truncated")
+
+    AssertEqual(TotalAmounts("0.10`n0.20"), "0.30", "Total without binary rounding")
+    AssertEqual(TotalAmounts("1.10`n`n$2.20`n(0.30)`n"), "3.00", "Total skips blank lines")
+    AssertEqual(TotalAmounts(RepeatText("999,999,999,999.99`n", 10)), "9999999999999.90", "Total at Excel precision limit")
+    AssertValueError(() => TotalAmounts(RepeatText("999,999,999,999.99`n", 11)), "Total beyond Excel precision rejected")
+    AssertValueError(() => TotalAmounts("`n "), "Total needs an amount")
+    AssertValueError(() => TotalAmounts("1`n2 CR"), "Total rejects CR/DR")
+}
+
 TestCatalogue() {
     context := {Year: 2026, Quarter: 1, Timestamp: "20240229000000"}
     identifiers := Map()
+    samples := Map("DaysBetween", "2024-02-29 to 2024-03-31")
     for entry in BuiltinCommands() {
         AssertEqual(identifiers.Has(entry.Id), false, "Unique command identifier")
         identifiers[entry.Id] := true
-        sample := entry.Category = "Identifiers" ? (InStr(entry.Id, "ABN") ? "10000000000" : "001234564")
-            : entry.Category = "Input dates" ? "2024-02-29" : " alpha `n beta "
+        sample := samples.Has(entry.Id) ? samples[entry.Id]
+            : entry.Category = "Identifiers" ? (InStr(entry.Id, "ABN") ? "10000000000" : "001234564")
+            : entry.Category = "Input dates" ? "2024-02-29"
+            : entry.Category = "Amounts" || entry.Category = "GST" ? "1,234.56`n`n(10.00)" : " alpha `n beta "
         output := ProduceCommand(entry, context, sample)
         AssertEqual(output != "", true, "Every built-in producer runs")
         if entry.Id = "Uppercase"
             AssertEqual(ProduceCommand(entry, context, "MiXeD text"), "MIXED TEXT", "Uppercase exact output")
         if entry.Id = "Lowercase"
             AssertEqual(ProduceCommand(entry, context, "MiXeD text"), "mixed text", "Lowercase exact output")
+        if entry.Id = "TitleCase"
+            AssertEqual(ProduceCommand(entry, context, "mIXED text"), "Mixed Text", "Title case exact output")
     }
     AssertEqual(FilterCommands(BuiltinCommands(), "QUARTER end").Length, 3, "Search uses case-insensitive terms")
     AssertEqual(FilterCommands(BuiltinCommands(), ".*[()").Length, 0, "Search is literal")
@@ -210,7 +302,7 @@ TestCatalogue() {
     AssertValueError(() => ExpandSnippet(RepeatText("a", 16385), context), "Snippet over character limit")
     catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
-    AssertEqual(catalogue.Commands.Length, 57, "Built-ins and bundled snippets discovered")
+    AssertEqual(catalogue.Commands.Length, 71, "Built-ins and bundled snippets discovered")
     for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
         AssertEqual(InStr(draft.Body, "[complete") > 0, true, "Bundled draft requires completion: " draft.Name)
 }
@@ -494,6 +586,40 @@ TestPickerKeyboard() {
     } finally palette.Close()
 }
 
+TestPickerOwnsDialogs() {
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    seen := {Owner: 0, Allowed: ""}
+    palette.Confirm := ConfirmWithInspectedDialog.Bind(seen)
+    try {
+        palette.Show()
+        if !WinWaitActive("ahk_id " palette.Window.Hwnd, , 3)
+            throw Error("Synthetic dialog-test picker could not receive focus.")
+        ChooseCommand(palette, "TrimText")
+        palette.Input.Value := "=1+1"
+        palette.RefreshPreview()
+        copied := palette.CopyResult()
+        AssertEqual(seen.Owner, palette.Window.Hwnd, "Formula confirmation is owned by the picker")
+        AssertEqual(seen.Allowed, false, "Direct hotkeys suppressed inside picker dialogs")
+        AssertEqual(copied, false, "Declined confirmation refuses copy")
+        AssertEqual(fake.Writes, 0, "Declined confirmation does not write")
+    } finally palette.Close()
+}
+
+ConfirmWithInspectedDialog(seen) {
+    SetTimer(InspectActiveDialog.Bind(seen), -300)
+    return MsgBox("Fabricated confirmation", "AU hotkeys: dialog test", "YesNo T3") = "Yes"
+}
+
+InspectActiveDialog(seen) {
+    dialog := WinActive("AU hotkeys: dialog test")
+    if dialog {
+        seen.Owner := DllCall("GetWindow", "Ptr", dialog, "UInt", 4, "Ptr") ; GW_OWNER
+        seen.Allowed := IsAllowedApplication([])
+        PostMessage(0x111, 7, 0, , dialog) ; WM_COMMAND IDNO declines the confirmation.
+    }
+}
+
 ReplaceNativeEdit(control, text) {
     SendMessage(0xB1, 0, -1, control) ; EM_SETSEL selects the existing text.
     SendMessage(0xC2, 0, StrPtr(text), control) ; EM_REPLACESEL exercises the edit's native limit.
@@ -521,7 +647,7 @@ TestPickerManualLimits() {
         AssertEqual(palette.CopyButton.Enabled, false, "Oversize native search disables copy")
         ReplaceNativeEdit(palette.Search, RepeatText(" ", 128))
         AssertEqual(StrLen(palette.Search.Value), 128, "At-cap native search is retained completely")
-        AssertEqual(palette.Rows.Length, 45, "At-cap whitespace query still searches the catalogue")
+        AssertEqual(palette.Rows.Length, 59, "At-cap whitespace query still searches the catalogue")
         AssertEqual(fake.Reads + fake.Writes, 0, "Manual entry does not access clipboard")
     } finally palette.Close()
 }

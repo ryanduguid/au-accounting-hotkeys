@@ -18,6 +18,7 @@ Search uses literal, case-insensitive terms across the identifier, label and cat
 | `YearStartISO` | ISO start date | `2025-07-01` |
 | `YearEndFile` | Compact end date | `20260630` |
 | `PreviousYearEnd` | Previous year end | `30/06/2025` |
+| `FYMonthEnds` | The 12 month ends, one per line | `31/07/2025` to `30/06/2026` |
 | `QuarterEnd` | Selected quarter end | `30/06/2026` |
 | `QuarterStart` | Selected quarter start | `01/04/2026` |
 | `QuarterRange` | Selected quarter range | `01/04/2026 to 30/06/2026` |
@@ -53,8 +54,12 @@ Accepts exactly `dd/MM/yyyy`, `yyyy-MM-dd` or `yyyyMMdd`, with a calendar year f
 | `MonthEnd` | `01/02/2024` | `29/02/2024` |
 | `MonthRange` | `29/02/2024` | `01/02/2024 to 29/02/2024` |
 | `MonthLabel` | `29/02/2024` | `February 2024` |
+| `PeriodOfDate` | `15/08/2025` | `FY 2025-26 Q1` |
+| `DaysBetween` | `01/07/2025 to 30/06/2026` | `364` |
 
-Month commands use the input date's calendar month. They do not infer an accounting month from the selected quarter.
+Month commands use the input date's calendar month. They do not infer an accounting month from the selected quarter. `PeriodOfDate` uses the same 30 June financial year and quarters as the selected-period commands.
+
+`DaysBetween` takes two dates, either on separate lines or joined by `to`, so a copied `YearRange` or `QuarterRange` result works as input. It returns the second date minus the first: the same date gives `0`, and an earlier second date gives a negative number. Add 1 when you need to count both end dates. Input is limited to 200 characters.
 
 ## Identifiers
 
@@ -69,6 +74,26 @@ Accepts digits and ordinary spaces only, up to 64 characters. There must be exac
 
 These are fabricated checksum vectors, with no registration claim. Reports always state `Registry/existence/status: not checked`. They cannot establish identity, registration, active status or GST status. See the [primary sources](resources.md).
 
+## Amounts and GST
+
+Each line holds one Australian dollar amount: an optional leading minus or enclosing brackets for a negative, an optional `$`, at most 12 whole-dollar digits written plain (`1234567`) or with comma groups of three (`1,234,567`), and at most 2 decimal places. Spaces, tabs and non-breaking spaces around the amount are ignored. Any other line is rejected with its line number, and nothing is rounded on input. Text containing unsupported control characters is rejected as a whole, as for every command. `CR` and `DR` suffixes are rejected because a credit is negative in a ledger but a deposit on a bank statement; replace them with an explicit sign.
+
+Calculations use whole cents, with no floating point. Per-line commands keep blank lines as blank lines, so a pasted column stays aligned with its rows. Results are limited to 9,999,999,999,999.99, the largest two-decimal amount within the 15 significant digits Excel keeps for numbers.
+
+| Identifier | Input | Output |
+| --- | --- | --- |
+| `AmountsClean` | `($1,234.50)` | `-1234.50` |
+| `AmountsFormat` | `-1234.5` | `-1,234.50` |
+| `AmountsTotal` | `1.10`, `$2.20` and `(0.30)` on three lines | `3.00` |
+| `GSTInInclusive` | `100.00` | `9.09` |
+| `ExclusiveFromInclusive` | `100.00` | `90.91` |
+| `GSTOnExclusive` | `0.05` | `0.01` |
+| `InclusiveFromExclusive` | `0.05` | `0.06` |
+
+GST commands treat each line as one wholly taxable amount at 10%. They do not decide whether a supply is taxable, GST-free or input taxed. GST is rounded to the nearest cent, with half a cent rounded up, as the ATO's [tax invoice guidance](https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices) sets out for an invoice with one taxable sale. Negative amounts round half a cent away from zero, so a reversal cancels its original GST exactly; this symmetry is the library's policy, not a stated ATO rule for adjustment notes. The exclusive amount is the inclusive amount minus the rounded GST, so the two always add back to the input. The two directions are not exact inverses: `0.05` GST-inclusive contains `0.00` GST, while `0.05` GST-exclusive attracts `0.01` GST. For an invoice with several taxable sales, apply the ATO's total invoice or taxable sale rule yourself.
+
+Negative results begin with a minus sign, so copying them asks for the spreadsheet formula confirmation described below.
+
 ## Text and filenames
 
 Input and output are limited to 32,768 UTF-16 code units. NUL, backspace, DEL and unsupported ASCII control characters are rejected. Tabs and line endings are accepted where the command allows them. Commands reject an empty transformed result.
@@ -80,10 +105,14 @@ Input and output are limited to 32,768 UTF-16 code units. NUL, backspace, DEL an
 | `CollapseSpaces` | Trims each line and collapses repeated horizontal whitespace; preserves line boundaries. |
 | `SingleLine` | Collapses whitespace and joins text into one trimmed line. |
 | `LineEndings` | Converts CRLF and CR to LF. |
+| `RemoveBlankLines` | Removes lines containing only spaces, tabs or non-breaking spaces; keeps other lines exactly. |
+| `NumberLines` | Trims lines, discards blank lines and numbers the rest as `1. first`. |
 | `UniqueLines` | Trims lines, discards blank lines and keeps the first exact-case occurrence. |
 | `SortLines` | Trims lines, discards blank lines and sorts case sensitively; preserves duplicates. |
 | `Uppercase` | Converts text to uppercase. |
 | `Lowercase` | Converts text to lowercase. |
+| `TitleCase` | Capitalises the first letter of each word and lowercases the rest, so `GST` becomes `Gst`. |
+| `QuotedList` | Trims non-empty lines into `'first', 'second'`, doubling embedded single quotes. |
 | `CSVRow` | Trims non-empty lines into a comma-separated row; quotes fields containing commas or quotes and doubles embedded quotes. |
 | `TSVRow` | Trims non-empty lines into a tab-separated row; rejects input lines that already contain tabs. |
 | `Filename` | Joins text into one line, replaces forbidden punctuation with underscores, removes trailing spaces/full stops and prefixes reserved Windows device names with an underscore. Limits the result to 200 characters. |

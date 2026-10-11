@@ -115,6 +115,31 @@ MonthLabel(year, month) {
     return names[Integer(month)] " " year
 }
 
+FinancialYearMonthEnds(year) {
+    ValidateYear(year)
+    result := ""
+    Loop 12 {
+        month := Mod(A_Index + 5, 12) + 1
+        result .= (A_Index = 1 ? "" : "`n") MonthEnd(month >= 7 ? year - 1 : year, month)
+    }
+    return result
+}
+
+DaysBetween(text) {
+    if Type(text) != "String" || StrLen(text) > 200
+        throw ValueError("Enter two dates in at most 200 characters.")
+    if !RegExMatch(Trim(text, " `t`r`n"), "i)^(\S+)(?:[ `t]+to[ `t]+|(?:[ `t]*\R)+[ `t]*)(\S+)\z", &parts)
+        throw ValueError("Enter two dates on separate lines, or as: date to date.")
+    first := ParseStrictDate(parts[1])
+    second := ParseStrictDate(parts[2])
+    return String(DateDiff(CalendarDate(second.Year, second.Month, second.Day, "File"), CalendarDate(first.Year, first.Month, first.Day, "File"), "Days"))
+}
+
+PeriodOfDate(text) {
+    date := ParseStrictDate(text)
+    return "FY " FinancialYearLabel(date.Month >= 7 ? date.Year + 1 : date.Year) " Q" (Floor(Mod(date.Month + 5, 12) / 3) + 1)
+}
+
 MonthFromDate(text, part) {
     date := ParseStrictDate(text)
     switch part {
