@@ -8,7 +8,7 @@ authors:
 abstract: "Windows AutoHotkey v2 shortcuts for Australian accountants: financial-year dates, a searchable picker of period labels, ABN and ACN formatting, and draft workpaper snippets."
 repository-code: "https://github.com/ryanduguid/au-accounting-hotkeys"
 url: "https://duguid.com.au/"
-license: MIT
+license: Apache-2.0
 keywords:
   - accounting
   - australia

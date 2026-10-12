@@ -4,7 +4,7 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 
 [![Check](https://img.shields.io/github/actions/workflow/status/ryanduguid/au-accounting-hotkeys/check.yml?branch=main&label=Check&labelColor=000000&style=flat-square)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)<br>
 [![AutoHotkey: v2](https://img.shields.io/badge/AutoHotkey-v2-66023C?labelColor=000000&style=flat-square)](https://www.autohotkey.com/)
-[![licence: MIT](https://img.shields.io/badge/licence-MIT-66023C?labelColor=000000&style=flat-square)](LICENSE)
+[![licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-66023C?labelColor=000000&style=flat-square)](LICENSE)
 
 ## Start
 
@@ -158,4 +158,4 @@ GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 r
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
 
-MIT licensed. See [LICENSE](LICENSE).
+Apache-2.0 licensed. See [LICENSE](LICENSE). If you redistribute this work or build on it, keep the attribution in [NOTICE](NOTICE).
