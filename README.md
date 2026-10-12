@@ -3,7 +3,7 @@
 Type Australian workpaper dates and use a searchable library of period labels, draft snippets and text transformations on Windows with AutoHotkey v2.
 
 [![Check](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml/badge.svg)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)
-[![licence: MIT](https://img.shields.io/badge/licence-MIT-5C2D91.svg?labelColor=04001F)](LICENSE)
+[![licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-5C2D91.svg?labelColor=04001F)](LICENSE)
 [![AutoHotkey: v2](https://img.shields.io/badge/AutoHotkey-v2-5C2D91.svg?labelColor=04001F)](https://www.autohotkey.com/)
 
 ## Start
@@ -158,4 +158,4 @@ GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 r
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
 
-MIT licensed. See [LICENSE](LICENSE).
+Apache-2.0 licensed. See [LICENSE](LICENSE). If you redistribute this work or build on it, keep the attribution in [NOTICE](NOTICE).
