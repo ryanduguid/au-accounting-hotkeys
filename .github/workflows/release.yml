@@ -1,0 +1,106 @@
+name: Release source archive
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a version tag on main's history
+        if: github.event_name == 'push'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+  tests:
+    needs: validate
+    # Both local syntaxes resolve the caller's commit. Keep compatibility with
+    # Scorecard and the current stable actionlint parser.
+    uses: ./.github/workflows/check.yml # zizmor: ignore[self-repository]
+
+  security:
+    needs: validate
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/security.yml # zizmor: ignore[self-repository]
+
+  package:
+    needs: [tests, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Archive the tested commit and record its checksum
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+        run: |
+          mkdir dist
+          git -c core.autocrlf=false archive --format=zip --prefix=au-accounting-hotkeys/ \
+            --output="dist/au-accounting-hotkeys-$RELEASE_TAG.zip" HEAD
+          cd dist
+          sha256sum ./*.zip > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-archive
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # Create the release only after tests and security checks pass.
+      attestations: write
+      id-token: write
+    steps:
+      # This job consumes the archive without checking out or executing project code.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: source-archive
+          path: dist
+      - name: Verify the archive after downloading it
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS
+      - name: Sign the archive's build provenance
+        id: provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.zip
+      - name: Include the verification bundle
+        env:
+          BUNDLE_PATH: ${{ steps.provenance.outputs.bundle-path }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: cp -- "$BUNDLE_PATH" "dist/au-accounting-hotkeys-$RELEASE_TAG.sigstore.json"
+      - name: Upload the complete release, then publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/* --verify-tag --draft \
+            --title "AU accounting hotkeys $RELEASE_TAG" \
+            --notes 'Source archive with a SHA-256 checksum and signed build provenance. See docs/security.md for verification instructions.'
+          gh release edit "$RELEASE_TAG" --draft=false

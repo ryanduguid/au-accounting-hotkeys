@@ -155,6 +155,8 @@ The first command checks date boundaries, identifier algorithms, configuration, 
 
 GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
+CodeQL and zizmor check the GitHub Actions workflows. Tagged releases run the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands.
+
 ## Contribute
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
