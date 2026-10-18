@@ -3,6 +3,7 @@ name: Check
 on:
   push:
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -10,6 +11,7 @@ permissions:
 jobs:
   library:
     runs-on: windows-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
