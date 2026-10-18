@@ -1,4 +1,4 @@
-name: Release source archive
+name: Prepare source release
 
 on:
   push:
@@ -66,13 +66,13 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  publish:
+  attest:
     if: github.event_name == 'push' && github.ref_type == 'tag'
     needs: package
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write # Create the release only after tests and security checks pass.
+      contents: read
       attestations: write
       id-token: write
     steps:
@@ -94,13 +94,10 @@ jobs:
           BUNDLE_PATH: ${{ steps.provenance.outputs.bundle-path }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: cp -- "$BUNDLE_PATH" "dist/au-accounting-hotkeys-$RELEASE_TAG.sigstore.json"
-      - name: Upload the complete release, then publish it
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          gh release create "$RELEASE_TAG" dist/* --verify-tag --draft \
-            --title "AU accounting hotkeys $RELEASE_TAG" \
-            --notes 'Source archive with a SHA-256 checksum and signed build provenance. See docs/security.md for verification instructions.'
-          gh release edit "$RELEASE_TAG" --draft=false
+      - name: Save the signed release assets for maintainer publication
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-candidate
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30

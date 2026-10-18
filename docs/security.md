@@ -23,17 +23,19 @@ tagged commit. The archive contains tracked source, examples, documentation,
 licence and attribution, with no AutoHotkey runtime or compiled executable.
 Pull requests exercise the tests, security scans and archive packaging too,
 producing an unsigned preview named for the tested commit. They cannot run the
-publishing job.
+attestation job.
 
-Packaging has read-only repository access. A separate publishing job verifies
+Packaging has read-only repository access. A separate attestation job verifies
 the downloaded archive's SHA-256 checksum and creates a GitHub build provenance
-attestation. It uploads the ZIP, `SHA256SUMS` and a `.sigstore.json` verification
-bundle to a draft release, then publishes it after the uploads succeed. The
-publishing job does not check out or execute project source.
+attestation. It saves the ZIP, `SHA256SUMS` and a `.sigstore.json` verification
+bundle as the `release-candidate` workflow artifact for 30 days. This job does
+not check out or execute project source. Its contents permission is read-only;
+only attestation storage and the identity token receive write access.
 
-This workflow prepares future releases; its presence does not mean a release
-has already been published. It does not create tags or overwrite existing
-releases. If an upload fails, inspect the draft before attempting a new run.
+The workflow prepares release assets but does not create tags or publish or
+overwrite releases. Keeping publication with a maintainer avoids adding a
+release-write token to CI. The workflow's presence does not mean a release has
+already been published.
 
 ## Verify a download
 
@@ -62,6 +64,30 @@ gh attestation verify .\au-accounting-hotkeys-v1.0.0.zip `
 Stop if verification fails. A valid attestation identifies the build's source
 and workflow; it does not establish that the source is free of defects or that
 an accounting result is correct.
+
+## Publish verified assets
+
+For maintainers, download `release-candidate` from the successful tagged run.
+Replace `RUN_ID` with its numeric run ID and `v1.0.0` with the actual tag:
+
+```powershell
+gh run download RUN_ID --repo ryanduguid/au-accounting-hotkeys `
+  --name release-candidate --dir .\release-v1.0.0
+```
+
+Verify the ZIP using the commands above from inside that directory. After
+verification succeeds, create a draft containing all three assets, inspect it,
+then publish it:
+
+```powershell
+gh release create v1.0.0 --repo ryanduguid/au-accounting-hotkeys --verify-tag --draft `
+  --title 'AU accounting hotkeys v1.0.0' `
+  --notes 'Source archive with a SHA-256 checksum and signed build provenance.' `
+  .\release-v1.0.0\au-accounting-hotkeys-v1.0.0.zip `
+  .\release-v1.0.0\SHA256SUMS `
+  .\release-v1.0.0\au-accounting-hotkeys-v1.0.0.sigstore.json
+gh release edit v1.0.0 --repo ryanduguid/au-accounting-hotkeys --draft=false
+```
 
 ## Scorecard limits
 
