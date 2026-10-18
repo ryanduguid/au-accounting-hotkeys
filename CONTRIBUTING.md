@@ -13,6 +13,14 @@ Before submitting a change, run from the repository root:
 
 Pass `-AutoHotkey 'C:\path\to\AutoHotkey64.exe'` if your runtime is elsewhere. The interactive command opens and closes a temporary test window. State any checks you could not run.
 
+Both commands also run 1,000 generated-input cases against the native helpers,
+using fixed seeds `1` and `24301`. These check amount round trips and integer
+rounding, date parsing against Windows date arithmetic, malformed inputs and
+control-character rejection across every input command. A failure reports its
+seed and case number; rerun the same command to reproduce it. Keep a fixed
+regression example when a generated case exposes a bug. The tests use fabricated
+data and do not read the clipboard or send keystrokes unless `-UI` is selected.
+
 Add tests for new date or configuration behaviour. Include historical periods and invalid inputs where they affect the command. Keep new shortcuts configurable and check for conflicts with existing mappings.
 
 Add new picker commands to `BuiltinCommands()` in `commands.ahk`, with a fixed producer and explicit input limit. Keep input and output validation in `ProduceCommand`. Update the command catalogue and test an expected result, invalid input and the relevant limits. Add snippets as UTF-8 text with whitelisted date tokens; they must contain fields to complete wherever evidence or a judgement is required.

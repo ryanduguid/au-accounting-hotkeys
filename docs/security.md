@@ -6,6 +6,14 @@ The Windows Check workflow tests the AutoHotkey helpers, input limits, settings,
 snippet handling and picker boundaries on x64 and x86. The interactive checks
 described in the README still require a Windows desktop.
 
+The same jobs run 1,000 reproducible generated-input cases against the actual
+AutoHotkey helpers, including exact amount rounding, date conversions and
+malformed command inputs. They use fixed seeds and report the seed and case on
+failure. These property tests do not provide coverage-guided fuzzing.
+Scorecard's [Fuzzing detector](https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/checks/raw/fuzzing.go)
+does not include AutoHotkey in its language list, so these tests do not currently
+earn Fuzzing credit.
+
 The Workflow security workflow runs CodeQL's Actions analysis with the extended
 security queries and zizmor on pull requests, main-branch pushes and a weekly
 schedule. These tools analyse GitHub Actions workflows. They do not analyse
