@@ -1,5 +1,7 @@
 # Security checks and release verification
 
+For vulnerability reports and disclosure, use the [security policy](https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/SECURITY.md). This page describes the checks and release process.
+
 The Windows Check workflow tests the AutoHotkey helpers, input limits, settings,
 snippet handling and picker boundaries on x64 and x86. The interactive checks
 described in the README still require a Windows desktop.
