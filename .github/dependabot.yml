@@ -9,3 +9,12 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    groups:
+      # Minor and patch action updates arrive as one pull request, so they need
+      # one rebase and CI run instead of one each. Majors stay separate for review.
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
