@@ -2,6 +2,7 @@
 #Warn All, StdOut
 #Include %A_ScriptDir%\..\accounting-hotkeys.ahk
 #Include %A_ScriptDir%\expanded.ahk
+#Include %A_ScriptDir%\fuzz.ahk
 #SingleInstance Off
 
 checks := 0
@@ -47,6 +48,7 @@ try {
     AssertValueError(() => NormaliseHotkey("Insert & d"), "Unsupported key combinations rejected")
 
     TestExpanded()
+    TestGeneratedInputs()
     if A_Args.Length > 0 && A_Args[1] = "--ui" {
         TestKeyboardInput()
         TestPickerKeyboard()
