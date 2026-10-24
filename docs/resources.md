@@ -30,7 +30,7 @@ ABN and ACN checks establish formatting and checksum properties only. Use [ABN L
 
 [Accounting Excel Toolkit](https://github.com/ryanduguid/accounting-review-pipeline/tree/main/adapters/accounting-excel-toolkit) already supplies Power Query and VBA helpers. Its `Fx.ABNIsValid.pq` informed the strict identifier input policy: accept digits and spaces, preserve leading zeros and reject other characters. The checksum arithmetic was checked against the primary references above.
 
-[Ozzit](https://github.com/ryanduguid/Ozzit) supplies Excel modelling functions. Financial calculations belong in tools with appropriate numerical checks; the hotkey library handles dates, labels and text preparation.
+[Ozzit](https://github.com/ryanduguid/Ozzit) supplies Excel modelling functions. The hotkey library handles dates, labels and text preparation, plus bounded whole-cent totals and simple 10% GST commands for wholly taxable amounts. The [amounts and GST contract](commands.md#amounts-and-gst) sets out tax-treatment limits, per-line rounding, the negative-reversal policy and invoice-level review. Use tools with appropriate numerical checks for broader financial calculations.
 
 ## Commercial comparison
 
