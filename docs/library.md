@@ -37,7 +37,7 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 | `MonthRange(year, month)`, `MonthLabel(year, month)` | Calendar range or English month label. |
 | `MonthFromDate(text, part)` | Part is Start, End, Range or Label. |
 | `FinancialYearMonthEnds(year)` | The 12 month ends from July to June, one per line. |
-| `PeriodOfDate(text)` | Financial year and quarter label, such as `FY 2025-26 Q1`, for one supported date. |
+| `PeriodOfDate(text)` | Financial year and quarter label, such as `FY 2025-26 Q1`, for dates from 1 July 1899 to 30 June 9999, inclusive. The derived financial-year ending year must be from 1900 to 9999. |
 | `DaysBetween(text)` | Second date minus first, from two dates on separate lines or joined by ` to `. |
 
 ## Amount API

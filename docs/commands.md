@@ -43,7 +43,9 @@ The picker captures the date when producing a preview. Copy uses the stored resu
 
 ## One input date
 
-Accepts exactly `dd/MM/yyyy`, `yyyy-MM-dd` or `yyyyMMdd`, with a calendar year from 1601 to 9999. Leading and trailing spaces, tabs or line endings are removed. Two-digit years, non-padded dates, times, impossible calendar dates and multiple values are rejected. The entire input has a 64-character limit.
+The date parser accepts exactly `dd/MM/yyyy`, `yyyy-MM-dd` or `yyyyMMdd`, with a calendar year from 1601 to 9999. Leading and trailing spaces, tabs or line endings are removed. Two-digit years, non-padded dates, times, impossible calendar dates and multiple values are rejected. The entire input has a 64-character limit.
+
+`PeriodOfDate` accepts dates from 1 July 1899 to 30 June 9999, inclusive. Its derived financial-year ending year must be from 1900 to 9999.
 
 | Identifier | Input | Output |
 | --- | --- | --- |
