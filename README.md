@@ -4,7 +4,7 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 
 <div align="center">
 
-[![Check](https://img.shields.io/github/actions/workflow/status/ryanduguid/au-accounting-hotkeys/check.yml?branch=main&label=Check&labelColor=000000&style=flat)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)<br>
+[![check](https://img.shields.io/github/actions/workflow/status/ryanduguid/au-accounting-hotkeys/check.yml?branch=main&label=check&labelColor=000000&style=flat)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)<br>
 [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/ryanduguid/au-accounting-hotkeys?label=Scorecard&labelColor=000000&style=flat)](https://scorecard.dev/viewer/?uri=github.com/ryanduguid/au-accounting-hotkeys)<br>
 [![AutoHotkey: v2](https://img.shields.io/badge/AutoHotkey-v2-66023C?labelColor=000000&style=flat&color=66023C)](https://www.autohotkey.com/)
 [![licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-66023C?labelColor=000000&style=flat&color=66023C)](LICENSE)
