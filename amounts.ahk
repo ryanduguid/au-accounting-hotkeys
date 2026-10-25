@@ -61,6 +61,7 @@ AmountLines(text, transform, separators := false) {
     return JoinLines(lines)
 }
 
+; Sums whole cents, so the total is exact rather than nearly right (cf. Luke 16:10, NET).
 TotalAmounts(text) {
     total := 0
     found := false
