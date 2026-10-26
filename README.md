@@ -14,7 +14,7 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 [![check](https://img.shields.io/github/actions/workflow/status/ryanduguid/au-accounting-hotkeys/check.yml?branch=main&label=check&labelColor=000000&style=flat)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)<br>
 [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/ryanduguid/au-accounting-hotkeys?label=Scorecard&labelColor=000000&style=flat)](https://scorecard.dev/viewer/?uri=github.com/ryanduguid/au-accounting-hotkeys)<br>
 [![AutoHotkey: v2](https://img.shields.io/badge/AutoHotkey-v2-66023C?labelColor=000000&style=flat&color=66023C)](https://www.autohotkey.com/)
-[![licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-66023C?labelColor=000000&style=flat&color=66023C)](LICENSE)
+[![licence: FSL-1.1-ALv2](https://img.shields.io/badge/licence-FSL--1.1--ALv2-66023C?labelColor=000000&style=flat&color=66023C)](LICENSE)
 
 </div>
 
@@ -172,4 +172,4 @@ CodeQL and zizmor check the GitHub Actions workflows. Tagged releases run the li
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
 
-Apache-2.0 licensed. See [LICENSE](LICENSE). If you redistribute this work or build on it, keep the attribution in [NOTICE](NOTICE).
+Licensed under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2). You may use, modify and redistribute it for any purpose except a Competing Use as defined in LICENSE (making it available to others in a competing commercial product or service), and each version becomes available under Apache-2.0 two years after it is made available. See [LICENSE](LICENSE) and [NOTICE](NOTICE). If you redistribute this work or build on it, keep the copyright notices in [NOTICE](NOTICE).
