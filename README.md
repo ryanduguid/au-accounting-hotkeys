@@ -10,7 +10,7 @@
 <div align="center">
 
 [![check](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)
-[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/ryanduguid/au-accounting-hotkeys?label=Scorecard&labelColor=000000&style=flat)](https://scorecard.dev/viewer/?uri=github.com/ryanduguid/au-accounting-hotkeys)
+[![OpenSSF Scorecard](https://raw.githubusercontent.com/ryanduguid/.github/badges/ryanduguid/au-accounting-hotkeys.svg)](https://scorecard.dev/viewer/?uri=github.com/ryanduguid/au-accounting-hotkeys)
 [![AutoHotkey: v2](.github/assets/badges/autohotkey.svg)](https://www.autohotkey.com/)
 [![licence: FSL-1.1-ALv2](.github/assets/badges/licence.svg)](LICENSE)
 
