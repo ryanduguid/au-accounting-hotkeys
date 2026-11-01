@@ -10,6 +10,11 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      # CodeQL refuses a workflow whose init, analyze and upload-sarif steps differ in version.
+      # First, so a major bump of all three also arrives as one PR.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
       # Minor and patch action updates arrive as one pull request, so they need
       # one rebase and CI run instead of one each. Majors stay separate for review.
       actions-minor-patch:
