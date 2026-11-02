@@ -48,7 +48,7 @@ Open settings from the tray menu and add this under `[Hotkeys]`:
 Picker=^!Space
 ```
 
-Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed application. `Picker` is disabled by default so the original four shortcuts work without enabling clipboard actions.
+Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed application. `Picker` is disabled by default so the original 4 shortcuts work without enabling clipboard actions.
 
 1. Search by command name, category, identifier or snippet text, for example `quarter end`, `ABN` or `bank`. All words must match, ignoring case. Snippet text is searched before date tokens are expanded.
 2. Select a command with the arrow keys or mouse. Generated dates and snippets show a preview immediately.
@@ -56,7 +56,7 @@ Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed ap
 4. Review the preview, then choose **Copy result**. Copy uses that exact result, even if the clipboard changes afterwards.
 5. Paste into the intended destination yourself. Copy replaces the clipboard; the picker does not type into another window.
 
-Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The four typing shortcuts are suppressed while the picker or one of its dialogs is active.
+Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The 4 typing shortcuts are suppressed while the picker or one of its dialogs is active.
 
 Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation before copying. This is a warning, not a guarantee about spreadsheet interpretation. Format destination cells as Text when dates or leading-zero identifiers must remain exact. Clipboard history, synchronisation and remote-desktop policies may retain copied text; follow your firm's policy.
 
@@ -99,7 +99,7 @@ Picker=
 
 Save the file and select **Reload Script** from the tray menu. The tray tooltip shows the selected financial year and quarter.
 
-`FinancialYearEnding` accepts a four-digit year from 1900 to 9999. For a year ending in 2026:
+`FinancialYearEnding` accepts a 4-digit year from 1900 to 9999. For a year ending in 2026:
 
 | Quarter | End date |
 | --- | --- |
@@ -115,7 +115,7 @@ Leave `Applications` blank for all applications. To enable shortcuts only in Exc
 Applications=EXCEL.EXE,WINWORD.EXE
 ```
 
-Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown hotkey commands and invalid settings stop startup with an error message. The five recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear` and `Picker`; additional commands are available through the picker.
+Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown hotkey commands and invalid settings stop startup with an error message. The 5 recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear` and `Picker`; additional commands are available through the picker.
 
 `config.ini` is ignored by Git so your settings remain local. Keyboard layouts and application shortcuts can differ; test your mappings in the applications you use.
 
@@ -162,7 +162,7 @@ From the repository root, run these PowerShell commands with AutoHotkey v2 insta
 
 For a portable or differently located runtime, pass `-AutoHotkey 'C:\path\to\AutoHotkey64.exe'`.
 
-The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all four shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
+The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all 4 shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
 
 GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
