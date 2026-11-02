@@ -14,6 +14,8 @@
 [![AutoHotkey: v2](.github/assets/badges/autohotkey.svg)](https://www.autohotkey.com/)
 [![licence: FSL-1.1-ALv2](.github/assets/badges/licence.svg)](LICENSE)
 
+[Start](#start) · [Default shortcuts](#default-shortcuts) · [Enable the command picker](#enable-the-command-picker) · [Command library](#command-library) · [Configure](#configure) · [Customise snippets](#customise-snippets) · [Check changes](#check-changes) · [Licence](#licence)
+
 </div>
 
 Type Australian workpaper dates and use a searchable library of period labels, draft snippets and text transformations on Windows with AutoHotkey v2.
@@ -144,7 +146,7 @@ Include `dates.ahk` to use its functions without registering hotkeys:
 MsgBox(FinancialYearEnd(2026))       ; 30/06/2026
 MsgBox(QuarterEnd(2026, 1))          ; 30/09/2025
 MsgBox(FinancialYearLabel(2026))     ; 2025-26
-MsgBox(AustralianDate())            ; Today's local date
+MsgBox(AustralianDate())             ; Today's local date
 ```
 
 Related tools: [Accounting Excel Toolkit](https://github.com/ryanduguid/accounting-review-pipeline/tree/main/adapters/accounting-excel-toolkit) provides Power Query and VBA utilities; [Ozzit](https://github.com/ryanduguid/Ozzit) provides native Excel modelling functions.
@@ -171,6 +173,8 @@ CodeQL and zizmor check the GitHub Actions workflows. Tagged releases run the li
 ## Contribute
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
+
+## Licence
 
 Licensed under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2). You may use, modify and redistribute it for any purpose except a Competing Use as defined in LICENSE (making it available to others in a competing commercial product or service), and each version becomes available under Apache-2.0 2 years after it is made available. See [LICENSE](LICENSE) and [NOTICE](NOTICE). If you redistribute this work or build on it, keep the copyright notices in [NOTICE](NOTICE).
 
