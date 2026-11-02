@@ -2,11 +2,16 @@ name: Check
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_call:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   library:
@@ -33,4 +38,28 @@ jobs:
         shell: pwsh
         run: |
           & './tests/run.ps1' -AutoHotkey './.tools/AutoHotkey/AutoHotkey${{ matrix.architecture }}.exe'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # The workflow lint runs once, in a required check. actionlint's digest is
+      # from its release checksums file; shellcheck publishes none, so its digest
+      # was computed at pin time and matches the WinGet manifest.
+      - name: Download verified actionlint and shellcheck
+        if: matrix.architecture == '64'
+        shell: pwsh
+        run: |
+          $tools = @{
+            actionlint = @('https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip', '6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9')
+            shellcheck = @('https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip', '8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e')
+          }
+          foreach ($name in $tools.Keys) {
+            $uri, $expected = $tools[$name]
+            Invoke-WebRequest -Uri $uri -OutFile ".tools/$name.zip"
+            $actual = (Get-FileHash ".tools/$name.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -cne $expected) { throw "$name archive checksum mismatch." }
+            Expand-Archive -LiteralPath ".tools/$name.zip" -DestinationPath ".tools/$name"
+          }
+      - name: Lint the workflows with actionlint and shellcheck
+        if: matrix.architecture == '64'
+        shell: pwsh
+        run: |
+          & './.tools/actionlint/actionlint.exe' -shellcheck './.tools/shellcheck/shellcheck.exe'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

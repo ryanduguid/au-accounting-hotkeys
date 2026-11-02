@@ -31,12 +31,16 @@ jobs:
 
   tests:
     needs: validate
+    # check.yml and security.yml already test each pull request, so only a
+    # tag repeats them here.
+    if: github.event_name == 'push'
     # Both local syntaxes resolve the caller's commit. Keep compatibility with
     # Scorecard and the current stable actionlint parser.
     uses: ./.github/workflows/check.yml # zizmor: ignore[self-repository]
 
   security:
     needs: validate
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -62,6 +66,9 @@ jobs:
 
   package:
     needs: [tests, security]
+    # A pull request skips both and still previews the archive; a failed or
+    # cancelled job above stops packaging.
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

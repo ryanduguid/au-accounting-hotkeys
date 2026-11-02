@@ -3,8 +3,9 @@
 For vulnerability reports and disclosure, use the [security policy](https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/SECURITY.md). This page describes the checks and release process.
 
 The Windows Check workflow tests the AutoHotkey helpers, input limits, settings,
-snippet handling and picker boundaries on x64 and x86. The interactive checks
-described in the README still require a Windows desktop.
+snippet handling and picker boundaries on x64 and x86. The x64 job also lints
+the workflows with actionlint and shellcheck. The interactive checks described
+in the README still require a Windows desktop.
 
 The same jobs run 1,000 reproducible generated-input cases against the actual
 AutoHotkey helpers, including exact amount rounding, date conversions and
@@ -17,8 +18,8 @@ earn Fuzzing credit.
 The Workflow security workflow runs CodeQL's Actions analysis with the extended
 security queries and zizmor on pull requests, main-branch pushes and a weekly
 schedule. These tools analyse GitHub Actions workflows. They do not analyse
-AutoHotkey source or replace its tests. Results appear in the repository's
-Security tab.
+AutoHotkey source or replace its tests. CodeQL results appear in the
+repository's Security tab; a zizmor finding fails the zizmor job.
 
 Report suspected vulnerabilities using the repository's Security policy. Do not
 include client records, clipboard contents, personal settings or credentials in
@@ -31,9 +32,9 @@ accepts only `vMAJOR.MINOR.PATCH` tags whose commit is on main's history. It run
 the same x64/x86 library tests and workflow security scans before packaging the
 tagged commit. The archive contains tracked source, examples, documentation,
 licence and attribution, with no AutoHotkey runtime or compiled executable.
-Pull requests exercise the tests, security scans and archive packaging too,
-producing an unsigned preview named for the tested commit. They cannot run the
-attestation job.
+Pull requests exercise only the archive packaging, producing an unsigned preview
+named for the tested commit; the Check and Workflow security workflows test the
+same pull request. They cannot run the attestation job.
 
 Packaging has read-only repository access. A separate attestation job verifies
 the downloaded archive's SHA-256 checksum and creates a GitHub build provenance
