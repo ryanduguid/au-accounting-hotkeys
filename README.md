@@ -25,7 +25,7 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 3. Double-click `accounting-hotkeys.ahk`.
 4. Open a blank text document and press **Insert**. It types `30/06/2026`.
 
-The first run copies `config.example.ini` to `config.ini`. The default shortcuts work in all applications while the script runs, and Insert replaces the key's usual action. Check the selected year and quarter before using them in a workpaper.
+The first run copies `config.example.ini` to `config.ini`. The default shortcuts work in all applications whilst the script runs, and Insert replaces the key's usual action. Check the selected year and quarter before using them in a workpaper.
 
 Right-click the AutoHotkey tray icon and select **Suspend Hotkeys** to suspend the shortcuts, or **Exit** to stop the script. The script starts only when you run it.
 
@@ -56,7 +56,7 @@ Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed ap
 4. Review the preview, then choose **Copy result**. Copy uses that exact result, even if the clipboard changes afterwards.
 5. Paste into the intended destination yourself. Copy replaces the clipboard; the picker does not type into another window.
 
-Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The 4 typing shortcuts are suppressed while the picker or one of its dialogs is active.
+Use Tab to move between controls and Escape to close. Changing commands clears the previous input. The 4 typing shortcuts are suppressed whilst the picker or one of its dialogs is active.
 
 Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation before copying. This is a warning, not a guarantee about spreadsheet interpretation. Format destination cells as Text when dates or leading-zero identifiers must remain exact. Clipboard history, synchronisation and remote-desktop policies may retain copied text; follow your firm's policy.
 
@@ -66,7 +66,7 @@ The picker includes 59 built-in commands and 12 draft snippets:
 
 - Copy financial-year and quarter starts, ends, ranges, ISO dates and filename labels.
 - List the selected year's month ends.
-- Convert one explicit Australian, ISO or compact date, find its month boundaries or its financial year and quarter, or count the days between two dates.
+- Convert one explicit Australian, ISO or compact date, find its month boundaries or its financial year and quarter, or count the days between 2 dates.
 - Clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts.
 - Format ABNs and ACNs without losing leading zeros, and report their format/checksum result.
 - Trim, normalise, number, sort and deduplicate text, or turn lines into a CSV row, a tab-separated row or a quoted list.
@@ -125,7 +125,7 @@ Configuration examples: [Excel and Word](examples/excel-word.ini), or [picker on
 
 Bundled drafts live in `snippets`. To keep your own wording local, create a `snippets.local` directory beside the script and put UTF-8 `.txt` files in it. Start with [Custom-snippet.txt](examples/Custom-snippet.txt). Filenames become labels and must start with an ASCII letter or digit. Remaining characters may be ASCII letters, digits, spaces, underscores or hyphens, with at most 80 characters in total. Labels are compared case-insensitively; use a unique label across both folders.
 
-The picker takes a fresh snapshot when it opens. It loads only top-level text files, rejects Windows reparse points such as symbolic links and junctions, and never writes to snippets. NTFS hard links are not detected. Invalid files are excluded with a visible explanation, while the original shortcuts remain available.
+The picker takes a fresh snapshot when it opens. It loads only top-level text files, rejects Windows reparse points such as symbolic links and junctions, and never writes to snippets. NTFS hard links are not detected. Invalid files are excluded with a visible explanation, whilst the original shortcuts remain available.
 
 Supported date tokens are `{{TODAY_AU}}`, `{{TODAY_ISO}}`, `{{FILE_DATE}}`, `{{FY_START}}`, `{{FY_END}}`, `{{FY_LABEL}}`, `{{FY_RANGE}}`, `{{Q_START}}`, `{{Q_END}}`, `{{Q_RANGE}}` and `{{Q_NUMBER}}`. Token names are case sensitive. Unknown or incomplete tokens are errors; replacement happens once. AutoHotkey-looking text stays text.
 
@@ -172,7 +172,7 @@ CodeQL and zizmor check the GitHub Actions workflows. Tagged releases run the li
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
 
-Licensed under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2). You may use, modify and redistribute it for any purpose except a Competing Use as defined in LICENSE (making it available to others in a competing commercial product or service), and each version becomes available under Apache-2.0 two years after it is made available. See [LICENSE](LICENSE) and [NOTICE](NOTICE). If you redistribute this work or build on it, keep the copyright notices in [NOTICE](NOTICE).
+Licensed under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2). You may use, modify and redistribute it for any purpose except a Competing Use as defined in LICENSE (making it available to others in a competing commercial product or service), and each version becomes available under Apache-2.0 2 years after it is made available. See [LICENSE](LICENSE) and [NOTICE](NOTICE). If you redistribute this work or build on it, keep the copyright notices in [NOTICE](NOTICE).
 
 ---
 
