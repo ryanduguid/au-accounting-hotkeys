@@ -7,4 +7,5 @@ ReadClipboardText() {
 
 WriteClipboardText(text) {
     A_Clipboard := CheckedText(text)
+    return A_Clipboard
 }
