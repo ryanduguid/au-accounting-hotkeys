@@ -170,7 +170,10 @@ class CommandPicker {
         if output !== this.Output || !this.CopyButton.Enabled
             return false
         try {
-            this.Write.Call(output)
+            if this.Write.Call(output) !== output {
+                this.Status.Text := "Copy not confirmed: the clipboard does not hold the preview. Another program may have changed it."
+                return false
+            }
             this.Status.Text := "Copied " StrLen(output) " characters. Paste into the intended destination."
             return true
         } catch Error as problem {

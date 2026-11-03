@@ -415,6 +415,7 @@ class FakeClipboard {
     Confirms := 0
     Value := ""
     Output := ""
+    Replacement := ""
     Approved := false
     Opened := 0
     OnConfirm := 0
@@ -427,6 +428,7 @@ class FakeClipboard {
     WriteText(text) {
         this.Writes += 1
         this.Output := text
+        return this.Replacement = "" ? text : this.Replacement
     }
 
     Confirm() {
@@ -468,6 +470,10 @@ TestPickerState() {
         AssertEqual(fake.Reads, 1, "Copy never rereads input")
         AssertEqual(fake.Writes, 1, "Copy writes exactly once")
         AssertEqual(fake.Output, "2024-02-29", "Copy uses reviewed snapshot")
+        fake.Replacement := "changed by another program"
+        AssertEqual(palette.CopyResult(), false, "Copy reports a clipboard that lost the preview")
+        AssertEqual(InStr(palette.Status.Text, "Copy not confirmed"), 1, "Lost copy is not reported as copied")
+        fake.Replacement := ""
         ChooseCommand(palette, "TrimLines")
         fake.Value := "alpha`r`nbeta"
         palette.LoadInput()
