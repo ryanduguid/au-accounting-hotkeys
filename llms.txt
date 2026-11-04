@@ -18,3 +18,7 @@ complete and do not establish that a procedure was performed.
 ## Related
 
 - [Author's site](https://duguid.com.au/): Ryan Duguid's open source Australian accounting tools.
+
+## Reuse
+
+- [Reusing this code](https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/AGENTS.md#reusing-this-code): Ryan Duguid's work under FSL-1.1-ALv2; keep its notices and licence; public credit is requested.
