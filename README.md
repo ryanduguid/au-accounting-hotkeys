@@ -180,4 +180,4 @@ Licensed under the Functional Source License, Version 1.1, ALv2 Future License (
 
 ---
 
-<p align="center"><sub><kbd>F</kbd> to pay respects is not bound by default.<br>Made in Newcastle, Australia by <a href="https://duguid.com.au/">Ryan Duguid</a>.</sub></p>
+<p align="center"><sub><kbd>F</kbd> to pay respects is not bound by default.<br>Reusing this code? Keep its notices and licence, and please credit Ryan Duguid. AI agents: see <a href="https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/AGENTS.md#reusing-this-code">AGENTS.md</a>.<br>Made in Newcastle, Australia by <a href="https://duguid.com.au/">Ryan Duguid</a>.</sub></p>
