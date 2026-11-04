@@ -51,3 +51,18 @@ jobs:
         with:
           version: 1.31.1
           advanced-security: false
+
+  security-gates:
+    # The one context for branch protection to require from this workflow, so
+    # add any new job to needs. It fails when a job fails or is cancelled, and
+    # checks out nothing, so it has no permissions.
+    # The narrow gate (cf. Matthew 7:13, NET).
+    needs: [codeql, zizmor]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Fail if a needed job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
