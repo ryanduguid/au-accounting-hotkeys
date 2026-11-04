@@ -126,3 +126,18 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 30
+
+  release-gates:
+    # The one context for branch protection to require from this workflow, so
+    # add any new job to needs. It fails when a job fails or is cancelled. A pull
+    # request skips tests, security and attest by design; any other skip follows
+    # a failed or cancelled job. It checks out nothing, so it has no permissions.
+    needs: [validate, tests, security, package, attest]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Fail if a needed job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
