@@ -12,4 +12,4 @@ body:
     id: constraints
     attributes:
       label: Input and verification
-      description: Describe invalid inputs, period assumptions and how the result should be checked. Do not include client data or secrets.
+      description: Describe invalid inputs, period assumptions and how the result should be checked. Do not include client, taxpayer, employee or payroll data, taxpayer identifiers such as tax file numbers, or secrets. Do not attach confidential files.
