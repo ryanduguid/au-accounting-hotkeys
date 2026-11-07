@@ -271,6 +271,7 @@ TestWorkpaperArithmetic() {
     AssertEqual(DifferenceCheck(" 0.27`r`n"), "Difference: 0.27`nDivisible by 9 (0.27 / 9 = 0.03). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is not a whole cent, so one amount posted to the wrong side does not explain it.", "Cents difference divisible by 9 with no whole-cent half")
     AssertEqual(DifferenceCheck("250.00"), "Difference: 250.00`nNot divisible by 9, so transposed digits or a misplaced decimal point do not explain it on their own.`nHalf the difference is 125.00. Look for an amount of 125.00 posted to the wrong side.", "Half-amount wrong-side case")
     AssertEqual(DifferenceCheck("(1,800.00)"), "Difference: -1,800.00`nDivisible by 9 (1,800.00 / 9 = 200.00). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is 900.00. Look for an amount of 900.00 posted to the wrong side.", "Negative difference uses its size for hints")
+    AssertEqual(DifferenceCheck("30.00"), "Difference: 30.00`nNot divisible by 9, so transposed digits or a misplaced decimal point do not explain it on their own.`nHalf the difference is 15.00. Look for an amount of 15.00 posted to the wrong side.", "Difference divisible by 3 but not 9")
     for nil in ["0", "0.00", "-0"]
         AssertEqual(DifferenceCheck(nil), "Difference: 0.00. There is nothing to diagnose.", "Nil difference " nil)
     AssertEqual(DifferenceCheck("999,999,999,999.99"), "Difference: 999,999,999,999.99`nDivisible by 9 (999,999,999,999.99 / 9 = 111,111,111,111.11). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is not a whole cent, so one amount posted to the wrong side does not explain it.", "Largest accepted difference")
@@ -282,6 +283,13 @@ TestWorkpaperArithmetic() {
         AssertEqual(DateOffset(offset[1]), offset[2], "Date offset " offset[1])
     for badOffset in ["31/12/9999 + 1 day", "01/01/1601 - 1 day", "15/12/9999 + 1 month", "15/01/1601 - 1 month", "31/01/2024 + 1", "31/01/2024 1 month", "31/01/2024 + 1 year", "31/01/2024 + 1.5 months", "31/01/2024 + 100000 days", "+ 1 day", "31/01/2024 +- 1 day", "31/02/2024 + 1 day", "31/01/2024 + 1 day`n+ 1 day"]
         AssertValueError(DateOffset.Bind(badOffset), "Bad date offset rejected: " badOffset)
+    for outside in ["31/12/9999 + 1 day", "01/01/1601 - 1 day", "15/12/9999 + 1 month"] {
+        try {
+            DateOffset(outside)
+            throw Error("Date offset outside the calendar range accepted: " outside)
+        } catch ValueError as problem
+            AssertEqual(problem.Message, "The result must fall between 1601 and 9999.", "Range error names the limit: " outside)
+    }
 
     for due in [["15/01/2026 net 30", "14/02/2026"], ["15/01/2026, 30 days", "14/02/2026"], ["31/01/2024 30 days", "01/03/2024"], ["15/01/2026 Net 0", "15/01/2026"], ["15/01/2026 30 days after month end", "02/03/2026"], ["10/01/2024 30 days after month end", "01/03/2024"], ["15/02/2024 30 days after month end", "30/03/2024"], ["15/01/2026 20th of next month", "20/02/2026"], ["05/12/2025 20th of the following month", "20/01/2026"], ["15/01/2024 29th of next month", "29/02/2024"], ["2026-03-31 1 day", "01/04/2026"]]
         AssertEqual(DueDate(due[1]), due[2], "Due date " due[1])
