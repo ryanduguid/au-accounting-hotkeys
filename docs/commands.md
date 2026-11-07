@@ -77,7 +77,7 @@ These commands use the same date parser and return an Australian date or a label
 | `NextBusinessDay` | `06/11/2026` | `09/11/2026` |
 | `AgeingBucket` | `30/04/2026 to 30/06/2026` | `61 to 90 days overdue` |
 
-`DateOffset` takes a date, `+` or `-`, and up to 5 digits of `days` or `months` (or `day`, `month`). A month offset keeps the day of the month; when the target month is shorter, the result is that month's last day, as Excel's `EDATE` does. Add 12 months for a year. Input is limited to 64 characters.
+`DateOffset` takes a date, `+` or `-`, a whole number of up to 5 digits and `days` or `months` (`day` and `month` also work). A month offset keeps the day of the month; when the target month is shorter, the result is that month's last day, as Excel's `EDATE` does. Add 12 months for a year. Input is limited to 64 characters.
 
 `DueDate` takes an invoice date, an optional comma and one of these terms, with up to 4 digits for a day count:
 
