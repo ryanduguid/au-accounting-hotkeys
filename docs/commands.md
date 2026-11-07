@@ -39,7 +39,7 @@ Q1 covers July to September, Q2 October to December, Q3 January to March and Q4 
 | `Yesterday` | `05/10/2026` |
 | `Tomorrow` | `07/10/2026` |
 
-The picker captures the date when producing a preview. Copy uses the stored result, including across midnight. There is no business-day or public-holiday adjustment.
+The picker captures the date when producing a preview. Copy uses the stored result, including across midnight. These commands make no business-day or public-holiday adjustment.
 
 ## One input date
 
@@ -62,6 +62,44 @@ The date parser accepts exactly `dd/MM/yyyy`, `yyyy-MM-dd` or `yyyyMMdd`, with a
 Month commands use the input date's calendar month. They do not infer an accounting month from the selected quarter. `PeriodOfDate` uses the same 30 June financial year and quarters as the selected-period commands.
 
 `DaysBetween` takes two dates, either on separate lines or joined by `to`, so a copied `YearRange` or `QuarterRange` result works as input. It returns the second date minus the first: the same date gives `0`, and an earlier second date gives a negative number. Add 1 when you need to count both end dates. Input is limited to 200 characters.
+
+## Date arithmetic
+
+These commands use the same date parser and return an Australian date or a label. They do no legal date reasoning: none of them moves a date for a weekend or public holiday unless the command says so.
+
+| Identifier | Input | Output |
+| --- | --- | --- |
+| `DateOffset` | `31/01/2024 + 1 month` | `29/02/2024` |
+| `DateOffset` | `01/03/2024 - 1 day` | `29/02/2024` |
+| `DueDate` | `15/01/2026 net 30` | `14/02/2026` |
+| `DueDate` | `15/01/2026 30 days after month end` | `02/03/2026` |
+| `DueDate` | `15/01/2026 20th of next month` | `20/02/2026` |
+| `NextBusinessDay` | `06/11/2026` | `09/11/2026` |
+| `AgeingBucket` | `30/04/2026 to 30/06/2026` | `61 to 90 days overdue` |
+
+`DateOffset` takes a date, `+` or `-`, and up to 5 digits of `days` or `months` (or `day`, `month`). A month offset keeps the day of the month; when the target month is shorter, the result is that month's last day, as Excel's `EDATE` does. Add 12 months for a year. Input is limited to 64 characters.
+
+`DueDate` takes an invoice date, an optional comma and one of these terms, with up to 4 digits for a day count:
+
+- `net N` or `N days`: N days after the invoice date.
+- `N days after month end`: N days after the last day of the invoice's month.
+- `Nth of next month` (or `of the following month`): that day of the month after the invoice's month. A month without that day is rejected rather than moved.
+
+Shorthand such as `30 days EOM` is rejected because suppliers read it in more than one way; write the terms out. The due date is not moved off a weekend or public holiday. Input is limited to 100 characters.
+
+`NextBusinessDay` returns the first Monday to Friday after the input date. It skips weekends only: it does not know public holidays, so `31/12/2026` gives `01/01/2027`, New Year's Day. Check the result against the holidays that apply to you.
+
+`AgeingBucket` takes the due date and the as-at date, in the same form as `DaysBetween`, and counts days past due: `Current` (on or before the due date), `1 to 30 days overdue`, `31 to 60 days overdue`, `61 to 90 days overdue` or `Over 90 days overdue`. These are 30-day steps from the due date; reports that age by calendar month or from the invoice date can place an amount differently. Input is limited to 200 characters.
+
+## Times
+
+| Identifier | Input | Output |
+| --- | --- | --- |
+| `DurationHours` | `09:00 to 17:20` | `8.33` |
+| `DurationHours` | `09:00 to 17:20 round up 6` | `8.40` |
+| `DurationHours` | `09:00 to 17:07 round nearest 15` | `8.00` |
+
+`DurationHours` takes a start and an end time in 24-hour form, from `0:00` to `23:59`, either on separate lines or joined by `to` or `-`, and returns decimal hours to 2 places, rounded to the nearest hundredth. The end may be `24:00`. The end must be later than the start: an earlier or equal end time is rejected rather than read as overnight, so split an overnight period at `24:00`. Optional rounding applies to the minutes before conversion: `round up N` rounds up to a multiple of N minutes and `round nearest N` rounds to the nearest multiple, with an exact half rounded up; N is from 1 to 60. Check any rounding against the employment terms or billing policy that applies. Input is limited to 64 characters.
 
 ## Identifiers
 
@@ -87,12 +125,23 @@ Calculations use whole cents, with no floating point. Per-line commands keep bla
 | `AmountsClean` | `($1,234.50)` | `-1234.50` |
 | `AmountsFormat` | `-1234.5` | `-1,234.50` |
 | `AmountsTotal` | `1.10`, `$2.20` and `(0.30)` on three lines | `3.00` |
+| `DifferenceCheck` | `18.00` | Divide-by-9 and half-amount hints |
 | `GSTInInclusive` | `100.00` | `9.09` |
 | `ExclusiveFromInclusive` | `100.00` | `90.91` |
 | `GSTOnExclusive` | `0.05` | `0.01` |
 | `InclusiveFromExclusive` | `0.05` | `0.06` |
 
 GST commands treat each line as one wholly taxable amount at 10%. They do not decide whether a supply is taxable, GST-free or input taxed. GST is rounded to the nearest cent, with half a cent rounded up, as the ATO's [tax invoice guidance](https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices) sets out for an invoice with one taxable sale. Negative amounts round half a cent away from zero, so a reversal cancels its original GST exactly; this symmetry is the library's policy, not a stated ATO rule for adjustment notes. The exclusive amount is the inclusive amount minus the rounded GST, so the two always add back to the input. The two directions are not exact inverses: `0.05` GST-inclusive contains `0.00` GST, while `0.05` GST-exclusive attracts `0.01` GST. For an invoice with several taxable sales, apply the ATO's total invoice or taxable sale rule yourself.
+
+`DifferenceCheck` takes one amount, such as an out-of-balance difference, and reports 2 hints. Transposed digits (`54.00` keyed as `45.00`) and a misplaced decimal point (`12.30` keyed as `123.00`) both leave a difference divisible by 9 cents, so a difference that is not divisible by 9 cannot come from one such error alone. An amount posted to the wrong side moves the difference by twice that amount, so half the difference is the amount to look for. These are prompts for where to look: a difference divisible by 9 can have other causes, and the command proves nothing about the ledger. For `18.00` it returns:
+
+```text
+Difference: 18.00
+Divisible by 9 (18.00 / 9 = 2.00). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.
+Half the difference is 9.00. Look for an amount of 9.00 posted to the wrong side.
+```
+
+Input is limited to 64 characters.
 
 Negative results begin with a minus sign, so copying them asks for the spreadsheet formula confirmation described below.
 

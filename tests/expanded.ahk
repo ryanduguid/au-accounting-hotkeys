@@ -8,6 +8,7 @@ TestExpanded() {
     TestDateHelpers()
     TestIdentifiersAndText()
     TestAmounts()
+    TestWorkpaperArithmetic()
     TestCatalogue()
     TestSnippetSearch()
     TestSnippetLoading()
@@ -265,10 +266,51 @@ TestAmounts() {
     AssertValueError(() => TotalAmounts("1`n2 CR"), "Total rejects CR/DR")
 }
 
+TestWorkpaperArithmetic() {
+    AssertEqual(DifferenceCheck("18.00"), "Difference: 18.00`nDivisible by 9 (18.00 / 9 = 2.00). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is 9.00. Look for an amount of 9.00 posted to the wrong side.", "Difference divisible by 9 with a whole-cent half")
+    AssertEqual(DifferenceCheck(" 0.27`r`n"), "Difference: 0.27`nDivisible by 9 (0.27 / 9 = 0.03). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is not a whole cent, so one amount posted to the wrong side does not explain it.", "Cents difference divisible by 9 with no whole-cent half")
+    AssertEqual(DifferenceCheck("250.00"), "Difference: 250.00`nNot divisible by 9, so transposed digits or a misplaced decimal point do not explain it on their own.`nHalf the difference is 125.00. Look for an amount of 125.00 posted to the wrong side.", "Half-amount wrong-side case")
+    AssertEqual(DifferenceCheck("(1,800.00)"), "Difference: -1,800.00`nDivisible by 9 (1,800.00 / 9 = 200.00). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is 900.00. Look for an amount of 900.00 posted to the wrong side.", "Negative difference uses its size for hints")
+    for nil in ["0", "0.00", "-0"]
+        AssertEqual(DifferenceCheck(nil), "Difference: 0.00. There is nothing to diagnose.", "Nil difference " nil)
+    AssertEqual(DifferenceCheck("999,999,999,999.99"), "Difference: 999,999,999,999.99`nDivisible by 9 (999,999,999,999.99 / 9 = 111,111,111,111.11). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding.`nHalf the difference is not a whole cent, so one amount posted to the wrong side does not explain it.", "Largest accepted difference")
+    for badDifference in ["18.00`n27.00", "18.00 CR", "", " ", "abc", "1,000,000,000,000.00", 18]
+        AssertValueError(DifferenceCheck.Bind(badDifference), "Bad difference rejected")
+    AssertValueError(() => DifferenceCheck(RepeatText(" ", 61) "1.00"), "Difference length cap")
+
+    for offset in [["31/01/2024 + 1 month", "29/02/2024"], ["31/01/2023 + 1 month", "28/02/2023"], ["29/02/2024 + 12 months", "28/02/2025"], ["29/02/2024 +48 MONTHS", "29/02/2028"], ["31/03/2026 - 1 month", "28/02/2026"], ["2024-01-31 - 1 month", "31/12/2023"], ["30/06/2026 + 1 day", "01/07/2026"], ["2024-02-28 + 1 day", "29/02/2024"], ["01/03/2024 -1 days", "29/02/2024"], ["28/02/2100 + 1 day", "01/03/2100"], ["15/08/2025 + 0 days", "15/08/2025"], ["01/07/2025 + 364 days", "30/06/2026"], ["31/12/9999 - 0 months", "31/12/9999"], ["01/01/1601 + 99999 days", "16/10/1874"]]
+        AssertEqual(DateOffset(offset[1]), offset[2], "Date offset " offset[1])
+    for badOffset in ["31/12/9999 + 1 day", "01/01/1601 - 1 day", "15/12/9999 + 1 month", "15/01/1601 - 1 month", "31/01/2024 + 1", "31/01/2024 1 month", "31/01/2024 + 1 year", "31/01/2024 + 1.5 months", "31/01/2024 + 100000 days", "+ 1 day", "31/01/2024 +- 1 day", "31/02/2024 + 1 day", "31/01/2024 + 1 day`n+ 1 day"]
+        AssertValueError(DateOffset.Bind(badOffset), "Bad date offset rejected: " badOffset)
+
+    for due in [["15/01/2026 net 30", "14/02/2026"], ["15/01/2026, 30 days", "14/02/2026"], ["31/01/2024 30 days", "01/03/2024"], ["15/01/2026 Net 0", "15/01/2026"], ["15/01/2026 30 days after month end", "02/03/2026"], ["10/01/2024 30 days after month end", "01/03/2024"], ["15/02/2024 30 days after month end", "30/03/2024"], ["15/01/2026 20th of next month", "20/02/2026"], ["05/12/2025 20th of the following month", "20/01/2026"], ["15/01/2024 29th of next month", "29/02/2024"], ["2026-03-31 1 day", "01/04/2026"]]
+        AssertEqual(DueDate(due[1]), due[2], "Due date " due[1])
+    for badTerms in ["15/01/2026 30th of next month", "15/01/2026 29th of next month", "15/01/2026 0th of next month", "15/01/2026 30 days EOM", "15/01/2026", "15/01/2026 net thirty", "31/12/9999 net 1", "15/12/9999 20th of next month", "net 30", "15/01/2026 net 30 net 30", "15/01/2026 net 10000"]
+        AssertValueError(DueDate.Bind(badTerms), "Bad payment terms rejected: " badTerms)
+
+    ; 6 November 2026 is a Friday; 1 January 2027 is a public holiday the command does not know about.
+    for business in [["06/11/2026", "09/11/2026"], ["07/11/2026", "09/11/2026"], ["08/11/2026", "09/11/2026"], ["09/11/2026", "10/11/2026"], ["2024-02-28", "29/02/2024"], ["31/12/2026", "01/01/2027"]]
+        AssertEqual(NextBusinessDay(business[1]), business[2], "Next business day after " business[1])
+    AssertValueError(() => NextBusinessDay("31/12/9999"), "Next business day beyond 9999 rejected")
+    AssertValueError(() => NextBusinessDay("06/11/2026 + 1 day"), "Next business day takes one date")
+
+    for ageing in [["30/06/2026 to 30/06/2026", "Current"], ["01/07/2026 to 30/06/2026", "Current"], ["29/06/2026 to 30/06/2026", "1 to 30 days overdue"], ["31/05/2026 to 30/06/2026", "1 to 30 days overdue"], ["30/05/2026 to 30/06/2026", "31 to 60 days overdue"], ["01/05/2026`n30/06/2026", "31 to 60 days overdue"], ["30/04/2026 to 30/06/2026", "61 to 90 days overdue"], ["01/04/2026 to 30/06/2026", "61 to 90 days overdue"], ["31/03/2026 to 30/06/2026", "Over 90 days overdue"], ["31/01/2024 to 01/03/2024", "1 to 30 days overdue"], ["31/01/2023 to 03/03/2023", "31 to 60 days overdue"]]
+        AssertEqual(AgeingBucket(ageing[1]), ageing[2], "Ageing " ageing[1])
+    for badAgeing in ["30/06/2026", "31/06/2026 to 30/06/2026", "30/06/2026 - 31/07/2026"]
+        AssertValueError(AgeingBucket.Bind(badAgeing), "Bad ageing input rejected")
+
+    for duration in [["09:00 to 17:30", "8.50"], ["9:00-17:20", "8.33"], ["08:40 to 09:20", "0.67"], ["09:00 to 09:01", "0.02"], ["00:00 to 24:00", "24.00"], ["18:00 TO 24:00", "6.00"], ["09:00`r`n17:30", "8.50"], ["09:00 to 17:20 round up 6", "8.40"], ["09:00 to 17:24 round up 6", "8.40"], ["09:00 to 09:03 round nearest 6", "0.10"], ["09:00 to 09:02 round nearest 6", "0.00"], ["09:00 to 17:07 round nearest 15", "8.00"], ["09:00 to 17:08 ROUND NEAREST 15", "8.25"], ["09:00 to 10:01 round up 60", "2.00"]]
+        AssertEqual(DurationHours(duration[1]), duration[2], "Duration " duration[1])
+    for badDuration in ["17:00 to 09:00", "09:00 to 09:00", "24:00 to 24:00", "24:00 to 01:00", "09:00 to 24:01", "09:60 to 10:00", "25:00 to 26:00", "9am to 5pm", "0900 to 1700", "09:00", "09:00 to 17:00 to 18:00", "09:00 to 17:00 round up 0", "09:00 to 17:00 round up 61", "09:00 to 17:00 round down 6", "09:00 to 17:00 round 6", "09:00:00 to 17:00:00"]
+        AssertValueError(DurationHours.Bind(badDuration), "Bad duration rejected: " badDuration)
+    AssertValueError(() => DurationHours(RepeatText(" ", 60) "09:00 to 17:00"), "Duration length cap")
+}
+
 TestCatalogue() {
     context := {Year: 2026, Quarter: 1, Timestamp: "20240229000000"}
     identifiers := Map()
-    samples := Map("DaysBetween", "2024-02-29 to 2024-03-31")
+    samples := Map("DaysBetween", "2024-02-29 to 2024-03-31", "DateOffset", "2024-02-29 + 1 month", "DueDate", "2024-02-29 net 30",
+        "AgeingBucket", "2024-02-29 to 2024-03-31", "DurationHours", "09:00 to 17:30", "DifferenceCheck", "18.00")
     for entry in BuiltinCommands() {
         AssertEqual(identifiers.Has(entry.Id), false, "Unique command identifier")
         identifiers[entry.Id] := true
@@ -302,7 +344,7 @@ TestCatalogue() {
     AssertValueError(() => ExpandSnippet(RepeatText("a", 16385), context), "Snippet over character limit")
     catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
-    AssertEqual(catalogue.Commands.Length, 71, "Built-ins and bundled snippets discovered")
+    AssertEqual(catalogue.Commands.Length, 77, "Built-ins and bundled snippets discovered")
     for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
         AssertEqual(InStr(draft.Body, "[complete") > 0, true, "Bundled draft requires completion: " draft.Name)
 }
@@ -653,7 +695,7 @@ TestPickerManualLimits() {
         AssertEqual(palette.CopyButton.Enabled, false, "Oversize native search disables copy")
         ReplaceNativeEdit(palette.Search, RepeatText(" ", 128))
         AssertEqual(StrLen(palette.Search.Value), 128, "At-cap native search is retained completely")
-        AssertEqual(palette.Rows.Length, 59, "At-cap whitespace query still searches the catalogue")
+        AssertEqual(palette.Rows.Length, 65, "At-cap whitespace query still searches the catalogue")
         AssertEqual(fake.Reads + fake.Writes, 0, "Manual entry does not access clipboard")
     } finally palette.Close()
 }

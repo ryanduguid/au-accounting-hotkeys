@@ -61,6 +61,26 @@ AmountLines(text, transform, separators := false) {
     return JoinLines(lines)
 }
 
+; Two classic prompts for an out-of-balance difference. Each says where to look; neither is a finding.
+DifferenceCheck(text) {
+    if Type(text) != "String" || StrLen(text) > 64
+        throw ValueError("Enter one amount of at most 64 characters.")
+    cents := ParseAmountCents(Trim(text, " `t`r`n"))
+    if cents = 0
+        return "Difference: 0.00. There is nothing to diagnose."
+    size := Abs(cents)
+    ; Rearranging an amount's digits keeps its digit sum, and moving the decimal point
+    ; multiplies it by a power of 10, so either error leaves a multiple of 9 cents.
+    report := "Difference: " FormatCents(cents, true) "`n"
+        . (Mod(size, 9) = 0
+            ? "Divisible by 9 (" FormatCents(size, true) " / 9 = " FormatCents(size // 9, true) "). Transposed digits or a misplaced decimal point can cause this. It is a hint, not a finding."
+            : "Not divisible by 9, so transposed digits or a misplaced decimal point do not explain it on their own.")
+    ; An amount posted to the wrong side moves the difference by twice that amount.
+    return report "`n" (Mod(size, 2) = 0
+        ? "Half the difference is " FormatCents(size // 2, true) ". Look for an amount of " FormatCents(size // 2, true) " posted to the wrong side."
+        : "Half the difference is not a whole cent, so one amount posted to the wrong side does not explain it.")
+}
+
 ; Sums whole cents, so the total is exact rather than nearly right (cf. Luke 16:10, NET).
 TotalAmounts(text) {
     total := 0
