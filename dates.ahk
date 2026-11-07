@@ -171,17 +171,19 @@ DateOffset(text) {
 DueDate(text) {
     if Type(text) != "String" || StrLen(text) > 100
         throw ValueError("Enter an invoice date and terms in at most 100 characters.")
-    if !RegExMatch(Trim(text, " `t`r`n"), "^(\S+?),?[ `t]+(\S.*)\z", &parts)
-        throw ValueError("Enter an invoice date followed by its terms, such as 15/01/2026 net 30.")
+    if !RegExMatch(Trim(text, " `t`r`n"), "^(\S+?),?(?:[ `t]+|(?:[ `t]*\R)+[ `t]*)(\S.*)\z", &parts)
+        throw ValueError("Enter an invoice date followed by its terms, on one line or 2, such as 15/01/2026 net 30.")
     date := ParseStrictDate(parts[1])
     terms := parts[2]
     if RegExMatch(terms, "i)^(?:net[ `t]+([0-9]{1,4})|([0-9]{1,4})[ `t]+days?)\z", &found)
         return AustralianDateOf(DateFromDays(date, Integer(found[1] found[2])))
     if RegExMatch(terms, "i)^([0-9]{1,4})[ `t]+days?[ `t]+after[ `t]+month[ `t]+end\z", &found)
         return AustralianDateOf(DateFromDays({Year: date.Year, Month: date.Month, Day: DaysInMonth(date.Year, date.Month)}, Integer(found[1])))
-    if RegExMatch(terms, "i)^([0-9]{1,2})(?:st|nd|rd|th)?[ `t]+of[ `t]+(?:the[ `t]+)?(?:next|following)[ `t]+month\z", &found) {
+    if RegExMatch(terms, "i)^([0-9]{1,2})(st|nd|rd|th)?[ `t]+of[ `t]+(?:the[ `t]+)?(?:next|following)[ `t]+month\z", &found) {
         next := DateFromMonths({Year: date.Year, Month: date.Month, Day: 1}, 1)
         day := Integer(found[1])
+        if found[2] != "" && found[2] != Ordinal(day)
+            throw ValueError("Write the day as " day Ordinal(day) ", not " found[1] found[2] ".")
         if day < 1 || day > DaysInMonth(next.Year, next.Month)
             throw ValueError(MonthLabel(next.Year, next.Month) " has no day " day "; check the terms.")
         return CalendarDate(next.Year, next.Month, day)
@@ -189,8 +191,20 @@ DueDate(text) {
     throw ValueError("Use terms such as net 30, 30 days, 30 days after month end or 20th of next month.")
 }
 
-; Skips Saturdays and Sundays only. Public holidays are not checked.
-NextBusinessDay(text) {
+; English ordinal suffix for a day of the month: 1st, 2nd, 3rd, 4th, 11th, 21st.
+Ordinal(day) {
+    if day >= 11 && day <= 13
+        return "th"
+    switch Mod(day, 10) {
+        case 1: return "st"
+        case 2: return "nd"
+        case 3: return "rd"
+        default: return "th"
+    }
+}
+
+; Skips Saturdays and Sundays only. Public holidays are not checked, so this is not a business day.
+NextWeekday(text) {
     date := ParseStrictDate(text)
     weekday := FormatTime(CalendarDate(date.Year, date.Month, date.Day, "File"), "WDay")
     return AustralianDateOf(DateFromDays(date, weekday = 6 ? 3 : weekday = 7 ? 2 : 1))
@@ -212,7 +226,7 @@ AgeingBucket(text) {
 DurationHours(text) {
     if Type(text) != "String" || StrLen(text) > 64
         throw ValueError("Enter 2 times in at most 64 characters.")
-    if !RegExMatch(Trim(text, " `t`r`n"), "i)^([0-9]{1,2}):([0-9]{2})(?:[ `t]+to[ `t]+|[ `t]*-[ `t]*|[ `t]*\R[ `t]*)([0-9]{1,2}):([0-9]{2})(?:[ `t]+round[ `t]+(up|nearest)[ `t]+([0-9]{1,2}))?\z", &parts)
+    if !RegExMatch(Trim(text, " `t`r`n"), "i)^([0-9]{1,2}):([0-9]{2})(?:[ `t]+to[ `t]+|[ `t]*-[ `t]*|(?:[ `t]*\R)+[ `t]*)([0-9]{1,2}):([0-9]{2})(?:[ `t]+round[ `t]+(up|nearest)[ `t]+([0-9]{1,2}))?\z", &parts)
         throw ValueError("Enter 24-hour times such as 09:00 to 17:30, optionally followed by round up 6 or round nearest 15.")
     start := MinutesOfDay(parts[1], parts[2], false)
     finish := MinutesOfDay(parts[3], parts[4], true)

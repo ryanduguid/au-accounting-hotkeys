@@ -74,20 +74,20 @@ These commands use the same date parser and return an Australian date or a label
 | `DueDate` | `15/01/2026 net 30` | `14/02/2026` |
 | `DueDate` | `15/01/2026 30 days after month end` | `02/03/2026` |
 | `DueDate` | `15/01/2026 20th of next month` | `20/02/2026` |
-| `NextBusinessDay` | `06/11/2026` | `09/11/2026` |
+| `NextWeekday` | `06/11/2026` | `09/11/2026` |
 | `AgeingBucket` | `30/04/2026 to 30/06/2026` | `61 to 90 days overdue` |
 
 `DateOffset` takes a date, `+` or `-`, a whole number of up to 5 digits and `days` or `months` (`day` and `month` also work). A month offset keeps the day of the month; when the target month is shorter, the result is that month's last day, as Excel's `EDATE` does. Add 12 months for a year. Input is limited to 64 characters.
 
-`DueDate` takes an invoice date, an optional comma and one of these terms, with up to 4 digits for a day count:
+`DueDate` takes an invoice date, an optional comma and one of these terms, on the same line or the next, with up to 4 digits for a day count:
 
 - `net N` or `N days`: N days after the invoice date.
 - `N days after month end`: N days after the last day of the invoice's month.
-- `Nth of next month` (or `of the following month`): that day of the month after the invoice's month. A month without that day is rejected rather than moved.
+- `Nth of next month` (or `of the following month`): that day of the month after the invoice's month. An ordinal suffix is optional but must match its number, so `1nd` is rejected. A month without that day is rejected rather than moved.
 
 Shorthand such as `30 days EOM` is rejected because suppliers read it in more than one way; write the terms out. The due date is not moved off a weekend or public holiday. Input is limited to 100 characters.
 
-`NextBusinessDay` returns the first Monday to Friday after the input date. It skips weekends only: it does not know public holidays, so `31/12/2026` gives `01/01/2027`, New Year's Day. Check the result against the holidays that apply to you.
+`NextWeekday` returns the first Monday to Friday after the input date. It is not a business-day calculation, because it skips weekends only: it does not know public holidays, so `31/12/2026` gives `01/01/2027`, New Year's Day. Check the result against the holidays that apply to you.
 
 `AgeingBucket` takes the due date and the as-at date, in the same form as `DaysBetween`, and counts days past due: `Current` (on or before the due date), `1 to 30 days overdue`, `31 to 60 days overdue`, `61 to 90 days overdue` or `Over 90 days overdue`. These are 30-day steps from the due date; reports that age by calendar month or from the invoice date can place an amount differently. Input is limited to 200 characters.
 
@@ -99,7 +99,7 @@ Shorthand such as `30 days EOM` is rejected because suppliers read it in more th
 | `DurationHours` | `09:00 to 17:20 round up 6` | `8.40` |
 | `DurationHours` | `09:00 to 17:07 round nearest 15` | `8.00` |
 
-`DurationHours` takes a start and an end time in 24-hour form, from `0:00` to `23:59`, either on separate lines or joined by `to` or `-`, and returns decimal hours to 2 places, rounded to the nearest hundredth. The end may be `24:00`. The end must be later than the start: an earlier or equal end time is rejected rather than read as overnight, so split an overnight period at `24:00`. Optional rounding applies to the minutes before conversion: `round up N` rounds up to a multiple of N minutes and `round nearest N` rounds to the nearest multiple, with an exact half rounded up; N is from 1 to 60. Check any rounding against the employment terms or billing policy that applies. Input is limited to 64 characters.
+`DurationHours` takes a start and an end time in 24-hour form, from `0:00` to `23:59`, either on separate lines (blank lines between are ignored) or joined by `to` or `-`, and returns decimal hours to 2 places, rounded to the nearest hundredth. The end may be `24:00`. The end must be later than the start: an earlier or equal end time is rejected rather than read as overnight, so split an overnight period at `24:00`. Optional rounding applies to the minutes before conversion: `round up N` rounds up to a multiple of N minutes and `round nearest N` rounds to the nearest multiple, with an exact half rounded up; N is from 1 to 60. Check any rounding against the employment terms or billing policy that applies. Input is limited to 64 characters.
 
 ## Identifiers
 

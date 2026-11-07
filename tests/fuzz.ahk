@@ -98,11 +98,11 @@ FuzzWorkpaperArithmetic(rng) {
     AssertEqual((shifted.Year * 12 + shifted.Month) - (date.Year * 12 + date.Month), months, "Generated month offset moves whole months")
     AssertEqual(shifted.Day, Min(date.Day, DaysInMonth(shifted.Year, shifted.Month)), "Generated month offset keeps the day or ends the month")
 
-    following := NextBusinessDay(start)
+    following := NextWeekday(start)
     gap := Integer(DaysBetween(start " to " following))
     weekday := Integer(FormatTime(ConvertDate(following, "File"), "WDay"))
-    AssertEqual(weekday >= 2 && weekday <= 6 && gap >= 1 && gap <= 3, true, "Generated next business day is the first weekday after the date")
-    AssertEqual(gap = 1 || Integer(FormatTime(DateAdd(ConvertDate(following, "File"), -1, "Days"), "WDay")) = 1, true, "Generated next business day skips only a weekend")
+    AssertEqual(weekday >= 2 && weekday <= 6 && gap >= 1 && gap <= 3, true, "Generated next weekday is the first weekday after the date")
+    AssertEqual(gap = 1 || Integer(FormatTime(DateAdd(ConvertDate(following, "File"), -1, "Days"), "WDay")) = 1, true, "Generated next weekday skips only a weekend")
 
     ; Decimal hours stay within half a hundredth of the exact minutes.
     begin := rng.Next(0, 1439)
