@@ -291,6 +291,30 @@ TestWorkpaperArithmetic() {
             AssertEqual(problem.Message, "The result must fall between 1601 and 9999.", "Range error names the limit: " outside)
     }
 
+    ; The date-object helpers are public, so they validate the source date rather than correcting it.
+    for invalidSource in [{Year: 2024, Month: 2, Day: 31}, {Year: 2024, Month: 13, Day: 1}, {Year: 2024, Month: 0, Day: 1}, {Year: 2026, Month: 4, Day: 31}, {Year: 1900, Month: 2, Day: 29}, {Year: 2100, Month: 2, Day: 29}, {Year: 1600, Month: 12, Day: 31}, {Year: 2024, Month: 1, Day: 0}] {
+        AssertValueError(DateFromMonths.Bind(invalidSource, 0), "Month offset rejects an invalid source date")
+        AssertValueError(DateFromMonths.Bind(invalidSource, 1), "Month offset rejects an invalid source date before shifting")
+        AssertValueError(DateFromDays.Bind(invalidSource, 0), "Day offset rejects an invalid source date")
+        AssertValueError(AustralianDateOf.Bind(invalidSource), "Formatting rejects an invalid date")
+    }
+    for badCount in [1.5, "1", ""] {
+        AssertValueError(DateFromMonths.Bind({Year: 2024, Month: 1, Day: 31}, badCount), "Month offset needs a whole number")
+        AssertValueError(DateFromDays.Bind({Year: 2024, Month: 1, Day: 31}, badCount), "Day offset needs a whole number")
+    }
+    AssertEqual(AustralianDateOf(DateFromMonths({Year: 2024, Month: 1, Day: 31}, 1)), "29/02/2024", "Valid month-end source still ends the shorter month")
+    AssertEqual(AustralianDateOf(DateFromMonths({Year: 2000, Month: 2, Day: 29}, 0)), "29/02/2000", "29 February 2000 is a valid source")
+    for boundary in [["31/03/2026 + 1 month", "30/04/2026"], ["30/03/2026 + 1 month", "30/04/2026"], ["30/01/2026 + 1 month", "28/02/2026"], ["31/05/2026 + 1 month", "30/06/2026"], ["30/01/2100 + 1 month", "28/02/2100"], ["31/01/2000 + 1 month", "29/02/2000"], ["29/02/2000 + 0 days", "29/02/2000"], ["29/02/2000 + 12 months", "28/02/2001"]]
+        AssertEqual(DateOffset(boundary[1]), boundary[2], "Month-end boundary " boundary[1])
+    for invalidText in ["31/04/2026 + 1 month", "29/02/1900 + 0 days", "29/02/2100 + 1 month"]
+        AssertValueError(DateOffset.Bind(invalidText), "Date offset rejects an impossible date: " invalidText)
+    for invalidText in ["31/04/2026 net 30", "29/02/2100 30 days after month end"]
+        AssertValueError(DueDate.Bind(invalidText), "Due date rejects an impossible invoice date: " invalidText)
+    for monthEndTerms in [["30/04/2026 30 days after month end", "30/05/2026"], ["31/01/2026 1 day after month end", "01/02/2026"], ["30/01/2026 30 days after month end", "02/03/2026"], ["31/01/2024 29 days after month end", "29/02/2024"], ["31/01/2026 28th of next month", "28/02/2026"], ["30/03/2026 30th of next month", "30/04/2026"]]
+        AssertEqual(DueDate(monthEndTerms[1]), monthEndTerms[2], "Month-end terms " monthEndTerms[1])
+    for missingDay in ["31/03/2026 31st of next month", "30/01/2026 29th of next month", "31/01/2100 29th of next month"]
+        AssertValueError(DueDate.Bind(missingDay), "Next-month day missing from a shorter month: " missingDay)
+
     for due in [["15/01/2026 net 30", "14/02/2026"], ["15/01/2026, 30 days", "14/02/2026"], ["31/01/2024 30 days", "01/03/2024"], ["15/01/2026 Net 0", "15/01/2026"], ["15/01/2026 30 days after month end", "02/03/2026"], ["10/01/2024 30 days after month end", "01/03/2024"], ["15/02/2024 30 days after month end", "30/03/2024"], ["15/01/2026 20th of next month", "20/02/2026"], ["05/12/2025 20th of the following month", "20/01/2026"], ["15/01/2024 29th of next month", "29/02/2024"], ["2026-03-31 1 day", "01/04/2026"], ["15/01/2026`r`nnet 30", "14/02/2026"], ["15/01/2026,`n`n 20th of next month", "20/02/2026"], ["21/01/2026`n1st of next month", "01/02/2026"], ["15/01/2026 2ND of next month", "02/02/2026"], ["15/01/2026 3rd of next month", "03/02/2026"], ["15/01/2026 11th of next month", "11/02/2026"], ["15/01/2026 12th of next month", "12/02/2026"], ["15/01/2026 13th of next month", "13/02/2026"], ["15/01/2026 21st of next month", "21/02/2026"], ["15/01/2026 22nd of next month", "22/02/2026"], ["15/01/2026 23rd of next month", "23/02/2026"]]
         AssertEqual(DueDate(due[1]), due[2], "Due date " due[1])
     for badTerms in ["15/01/2026 30th of next month", "15/01/2026 29th of next month", "15/01/2026 0th of next month", "15/01/2026 30 days EOM", "15/01/2026", "15/01/2026 net thirty", "31/12/9999 net 1", "15/12/9999 20th of next month", "net 30", "15/01/2026 net 30 net 30", "15/01/2026 net 10000", "15/01/2026`nnet 30`nnet 30", "15/01/2026 1nd of next month", "15/01/2026 2st of next month", "15/01/2026 3th of next month", "15/01/2026 11st of next month", "15/01/2026 12nd of next month", "15/01/2026 13rd of next month", "15/01/2026 21th of next month", "15/01/2026 22rd of next month"]

@@ -141,6 +141,8 @@ AustralianDateOf(date) {
 
 ; DateAdd returns a five-digit year after 9999 and an empty string before 1601, so check its result.
 DateFromDays(date, days) {
+    if Type(days) != "Integer"
+        throw ValueError("Days must be a whole number.")
     stamp := DateAdd(CalendarDate(date.Year, date.Month, date.Day, "File"), days, "Days")
     if StrLen(stamp) != 14
         throw ValueError("The result must fall between 1601 and 9999.")
@@ -148,7 +150,11 @@ DateFromDays(date, days) {
 }
 
 ; As Excel's EDATE does, a day the target month lacks becomes that month's last day.
+; The source date must itself be valid; it is checked, not corrected.
 DateFromMonths(date, months) {
+    if Type(months) != "Integer"
+        throw ValueError("Months must be a whole number.")
+    CalendarDate(date.Year, date.Month, date.Day)
     index := date.Year * 12 + date.Month - 1 + months
     year := index // 12
     if year < 1601 || year > 9999
