@@ -13,6 +13,7 @@ TestGeneratedInputs() {
             try {
                 FuzzAmounts(iteration, rng)
                 FuzzDates(rng)
+                FuzzWorkpaperArithmetic(rng)
                 FuzzCommandInputs(commands, rng)
             } catch Error as problem {
                 throw Error("Generated inputs: seed " seed ", case " iteration ": " problem.Message
@@ -66,6 +67,48 @@ FuzzDates(rng) {
     }
     AssertValueError(ParseStrictDate.Bind(FormatTime(timestamp, "yyyy-MM") "-00"), "Generated day zero rejected")
     AssertValueError(ParseStrictDate.Bind(FormatTime(timestamp, "yyyy") "-13-01"), "Generated month thirteen rejected")
+}
+
+FuzzWorkpaperArithmetic(rng) {
+    ; Swapping 2 digits of an amount, or doubling it, must produce the matching hint.
+    digits := String(rng.Next(10, 99999999999999))
+    first := rng.Next(1, StrLen(digits))
+    second := rng.Next(1, StrLen(digits))
+    swapped := digits
+    swapped := SubStr(swapped, 1, first - 1) SubStr(digits, second, 1) SubStr(swapped, first + 1)
+    swapped := SubStr(swapped, 1, second - 1) SubStr(digits, first, 1) SubStr(swapped, second + 1)
+    difference := Integer(digits) - Integer(swapped)
+    hint := DifferenceCheck(FormatCents(difference))
+    AssertEqual(difference = 0 || InStr(hint, "`nDivisible by 9 (") > 0, true, "Generated transposition is divisible by 9")
+    posted := rng.Next(1, 49999999999999)
+    AssertEqual(InStr(DifferenceCheck(FormatCents(-2 * posted)), "`nHalf the difference is " FormatCents(posted, true) ". ") > 0, true, "Generated wrong-side posting is half the difference")
+
+    ; DaysBetween uses Windows DateDiff, an independent oracle for the offset and terms commands.
+    start := ConvertDate(FormatTime(DateAdd(Format("{:04}0101", rng.Next(1611, 9988)), rng.Next(0, 364), "Days"), "yyyyMMdd"), "AU")
+    days := rng.Next(0, 3000)
+    AssertEqual(DaysBetween(start " to " DateOffset(start " + " days " days")), String(days), "Generated day offset agrees with DateDiff")
+    AssertEqual(DaysBetween(start " to " DateOffset(start " - " days " days")), String(-days), "Generated negative day offset agrees with DateDiff")
+    AssertEqual(DueDate(start " net " days), DateOffset(start " + " days " days"), "Generated net terms equal a day offset")
+    expectedBucket := days = 0 ? "Current" : days <= 30 ? "1 to 30 days overdue" : days <= 60 ? "31 to 60 days overdue" : days <= 90 ? "61 to 90 days overdue" : "Over 90 days overdue"
+    AssertEqual(AgeingBucket(start " to " DateOffset(start " + " days " days")), expectedBucket, "Generated ageing bucket edges")
+
+    months := rng.Next(-120, 120)
+    date := ParseStrictDate(start)
+    shifted := ParseStrictDate(DateOffset(start (months < 0 ? " - " : " + ") Abs(months) " months"))
+    AssertEqual((shifted.Year * 12 + shifted.Month) - (date.Year * 12 + date.Month), months, "Generated month offset moves whole months")
+    AssertEqual(shifted.Day, Min(date.Day, DaysInMonth(shifted.Year, shifted.Month)), "Generated month offset keeps the day or ends the month")
+
+    following := NextWeekday(start)
+    gap := Integer(DaysBetween(start " to " following))
+    weekday := Integer(FormatTime(ConvertDate(following, "File"), "WDay"))
+    AssertEqual(weekday >= 2 && weekday <= 6 && gap >= 1 && gap <= 3, true, "Generated next weekday is the first weekday after the date")
+    AssertEqual(gap = 1 || Integer(FormatTime(DateAdd(ConvertDate(following, "File"), -1, "Days"), "WDay")) = 1, true, "Generated next weekday skips only a weekend")
+
+    ; Decimal hours stay within half a hundredth of the exact minutes.
+    begin := rng.Next(0, 1439)
+    finish := rng.Next(begin + 1, 1440)
+    hours := DurationHours(Format("{:02}:{:02} to {:02}:{:02}", begin // 60, Mod(begin, 60), finish // 60, Mod(finish, 60)))
+    AssertEqual(Abs(Integer(StrReplace(hours, ".")) * 60 - (finish - begin) * 100) <= 30, true, "Generated decimal hours round to the nearest hundredth")
 }
 
 FuzzCommandInputs(commands, rng) {

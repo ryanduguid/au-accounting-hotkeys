@@ -39,10 +39,14 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 | `FinancialYearMonthEnds(year)` | The 12 month ends from July to June, one per line. |
 | `PeriodOfDate(text)` | Financial year and quarter label, such as `FY 2025-26 Q1`, for dates from 1 July 1899 to 30 June 9999, inclusive. The derived financial-year ending year must be from 1900 to 9999. |
 | `DaysBetween(text)` | Second date minus first, from two dates on separate lines or joined by ` to `. |
+| `DateFromDays(date, days)`, `DateFromMonths(date, months)` | Shift a valid `{Year, Month, Day}` date by a whole number; an invalid source date or count throws `ValueError`. A month shift keeps the day or, if the target month lacks it, uses the month's last day. Results must fall in 1601 to 9999. |
+| `AustralianDateOf(date)` | `{Year, Month, Day}` to `dd/MM/yyyy`. |
+| `DateOffset(text)`, `DueDate(text)`, `NextWeekday(text)`, `AgeingBucket(text)` | The input-date commands of the same names. |
+| `DurationHours(text)` | Decimal hours between 2 times on one day, with optional rounding. |
 
 ## Amount API
 
-`amounts.ahk` works in integer cents, with no floating point. `ParseAmountCents(text)` accepts one amount with an optional leading minus or enclosing brackets, an optional `$`, at most 12 whole-dollar digits (plain or comma-grouped) and at most 2 decimal places; it throws `ValueError` otherwise, including for CR or DR suffixes. `FormatCents(cents, separators := false)` returns `-1234.56` or `-1,234.56`. `FormatCents` and `RoundedShare` accept only integer cents within 9,999,999,999,999.99 either side of zero, so callers cannot reach 64-bit wraparound. `RoundedShare(cents, divisor)` takes a whole-number divisor from 1 to 100 and rounds to the nearest cent with half cents away from zero; `GSTOnExclusive(cents)` and `GSTInInclusive(cents)` apply it with divisors 10 and 11. `AmountLines(text, transform, separators := false)` applies a transform to each line and keeps blank lines; `TotalAmounts(text)` adds the non-blank lines.
+`amounts.ahk` works in integer cents, with no floating point. `ParseAmountCents(text)` accepts one amount with an optional leading minus or enclosing brackets, an optional `$`, at most 12 whole-dollar digits (plain or comma-grouped) and at most 2 decimal places; it throws `ValueError` otherwise, including for CR or DR suffixes. `FormatCents(cents, separators := false)` returns `-1234.56` or `-1,234.56`. `FormatCents` and `RoundedShare` accept only integer cents within 9,999,999,999,999.99 either side of zero, so callers cannot reach 64-bit wraparound. `RoundedShare(cents, divisor)` takes a whole-number divisor from 1 to 100 and rounds to the nearest cent with half cents away from zero; `GSTOnExclusive(cents)` and `GSTInInclusive(cents)` apply it with divisors 10 and 11. `AmountLines(text, transform, separators := false)` applies a transform to each line and keeps blank lines; `TotalAmounts(text)` adds the non-blank lines. `DifferenceCheck(text)` reports the divide-by-9 and half-amount hints for one difference.
 
 ## Identifier and text API
 

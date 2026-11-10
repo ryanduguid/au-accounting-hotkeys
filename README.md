@@ -64,12 +64,15 @@ Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation befor
 
 ## Command library
 
-The picker includes 59 built-in commands and 12 draft snippets:
+The picker includes 65 built-in commands and 12 draft snippets:
 
 - Copy financial-year and quarter starts, ends, ranges, ISO dates and filename labels.
 - List the selected year's month ends.
 - Convert one explicit Australian, ISO or compact date, find its month boundaries or its financial year and quarter, or count the days between 2 dates.
+- Add days or months to a date, work out a due date from payment terms, find the next weekday and age an overdue amount.
+- Turn 2 times on one day into decimal hours.
 - Clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts.
+- Get the divide-by-9 and half-amount hints for a reconciliation difference.
 - Format ABNs and ACNs without losing leading zeros, and report their format/checksum result.
 - Trim, normalise, number, sort and deduplicate text, or turn lines into a CSV row, a tab-separated row or a quoted list.
 - Prepare a filename component as text, without renaming a file.

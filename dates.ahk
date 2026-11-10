@@ -135,6 +135,129 @@ DaysBetween(text) {
     return String(DateDiff(CalendarDate(second.Year, second.Month, second.Day, "File"), CalendarDate(first.Year, first.Month, first.Day, "File"), "Days"))
 }
 
+AustralianDateOf(date) {
+    return CalendarDate(date.Year, date.Month, date.Day)
+}
+
+; DateAdd returns a five-digit year after 9999 and an empty string before 1601, so check its result.
+DateFromDays(date, days) {
+    if Type(days) != "Integer"
+        throw ValueError("Days must be a whole number.")
+    stamp := DateAdd(CalendarDate(date.Year, date.Month, date.Day, "File"), days, "Days")
+    if StrLen(stamp) != 14
+        throw ValueError("The result must fall between 1601 and 9999.")
+    return ParseStrictDate(SubStr(stamp, 1, 8))
+}
+
+; As Excel's EDATE does, a day the target month lacks becomes that month's last day.
+; The source date must itself be valid; it is checked, not corrected.
+DateFromMonths(date, months) {
+    if Type(months) != "Integer"
+        throw ValueError("Months must be a whole number.")
+    CalendarDate(date.Year, date.Month, date.Day)
+    index := date.Year * 12 + date.Month - 1 + months
+    year := index // 12
+    if year < 1601 || year > 9999
+        throw ValueError("The result must fall between 1601 and 9999.")
+    month := Mod(index, 12) + 1
+    return {Year: year, Month: month, Day: Min(date.Day, DaysInMonth(year, month))}
+}
+
+DateOffset(text) {
+    if Type(text) != "String" || StrLen(text) > 64
+        throw ValueError("Enter one date offset of at most 64 characters.")
+    if !RegExMatch(Trim(text, " `t`r`n"), "i)^(\S+)[ `t]+([+-])[ `t]*([0-9]{1,5})[ `t]+(day|month)s?\z", &parts)
+        throw ValueError("Enter a date, + or - and a number of days or months, such as 31/01/2024 + 1 month.")
+    date := ParseStrictDate(parts[1])
+    count := parts[2] = "-" ? -Integer(parts[3]) : Integer(parts[3])
+    return AustralianDateOf(parts[4] = "day" ? DateFromDays(date, count) : DateFromMonths(date, count))
+}
+
+; Payment terms are written out in full, because shorthand such as '30 days EOM' is read more than one way.
+DueDate(text) {
+    if Type(text) != "String" || StrLen(text) > 100
+        throw ValueError("Enter an invoice date and terms in at most 100 characters.")
+    if !RegExMatch(Trim(text, " `t`r`n"), "^(\S+?),?(?:[ `t]+|(?:[ `t]*\R)+[ `t]*)(\S.*)\z", &parts)
+        throw ValueError("Enter an invoice date followed by its terms, on one line or 2, such as 15/01/2026 net 30.")
+    date := ParseStrictDate(parts[1])
+    terms := parts[2]
+    if RegExMatch(terms, "i)^(?:net[ `t]+([0-9]{1,4})|([0-9]{1,4})[ `t]+days?)\z", &found)
+        return AustralianDateOf(DateFromDays(date, Integer(found[1] found[2])))
+    if RegExMatch(terms, "i)^([0-9]{1,4})[ `t]+days?[ `t]+after[ `t]+month[ `t]+end\z", &found)
+        return AustralianDateOf(DateFromDays({Year: date.Year, Month: date.Month, Day: DaysInMonth(date.Year, date.Month)}, Integer(found[1])))
+    if RegExMatch(terms, "i)^([0-9]{1,2})(st|nd|rd|th)?[ `t]+of[ `t]+(?:the[ `t]+)?(?:next|following)[ `t]+month\z", &found) {
+        next := DateFromMonths({Year: date.Year, Month: date.Month, Day: 1}, 1)
+        day := Integer(found[1])
+        if found[2] != "" && found[2] != Ordinal(day)
+            throw ValueError("Write the day as " day Ordinal(day) ", not " found[1] found[2] ".")
+        if day < 1 || day > DaysInMonth(next.Year, next.Month)
+            throw ValueError(MonthLabel(next.Year, next.Month) " has no day " day "; check the terms.")
+        return CalendarDate(next.Year, next.Month, day)
+    }
+    throw ValueError("Use terms such as net 30, 30 days, 30 days after month end or 20th of next month.")
+}
+
+; English ordinal suffix for a day of the month: 1st, 2nd, 3rd, 4th, 11th, 21st.
+Ordinal(day) {
+    if day >= 11 && day <= 13
+        return "th"
+    switch Mod(day, 10) {
+        case 1: return "st"
+        case 2: return "nd"
+        case 3: return "rd"
+        default: return "th"
+    }
+}
+
+; Skips Saturdays and Sundays only. Public holidays are not checked, so this is not a business day.
+NextWeekday(text) {
+    date := ParseStrictDate(text)
+    weekday := FormatTime(CalendarDate(date.Year, date.Month, date.Day, "File"), "WDay")
+    return AustralianDateOf(DateFromDays(date, weekday = 6 ? 3 : weekday = 7 ? 2 : 1))
+}
+
+; Days past the due date at the as-at date, in 30-day steps.
+AgeingBucket(text) {
+    overdue := Integer(DaysBetween(text))
+    if overdue <= 0
+        return "Current"
+    for edge in [30, 60, 90] {
+        if overdue <= edge
+            return (edge - 29) " to " edge " days overdue"
+    }
+    return "Over 90 days overdue"
+}
+
+; Decimal hours between 2 times on one day. An end time earlier than the start is refused, not read as overnight.
+DurationHours(text) {
+    if Type(text) != "String" || StrLen(text) > 64
+        throw ValueError("Enter 2 times in at most 64 characters.")
+    if !RegExMatch(Trim(text, " `t`r`n"), "i)^([0-9]{1,2}):([0-9]{2})(?:[ `t]+to[ `t]+|[ `t]*-[ `t]*|(?:[ `t]*\R)+[ `t]*)([0-9]{1,2}):([0-9]{2})(?:[ `t]+round[ `t]+(up|nearest)[ `t]+([0-9]{1,2}))?\z", &parts)
+        throw ValueError("Enter 24-hour times such as 09:00 to 17:30, optionally followed by round up 6 or round nearest 15.")
+    start := MinutesOfDay(parts[1], parts[2], false)
+    finish := MinutesOfDay(parts[3], parts[4], true)
+    if finish <= start
+        throw ValueError("The end time must be later than the start time on the same day. Split an overnight period at 24:00.")
+    minutes := finish - start
+    if parts[5] != "" {
+        unit := Integer(parts[6])
+        if unit < 1 || unit > 60
+            throw ValueError("Round to a unit from 1 to 60 minutes.")
+        ; Nearest rounds an exact half unit up.
+        minutes := parts[5] = "up" ? (minutes + unit - 1) // unit * unit : (2 * minutes + unit) // (2 * unit) * unit
+    }
+    ; Hundredths of an hour, to the nearest; minutes * 5 / 3 never ends in exactly a half.
+    hundredths := (10 * minutes + 3) // 6
+    return hundredths // 100 "." Format("{:02}", Mod(hundredths, 100))
+}
+
+MinutesOfDay(hours, minutes, isEnd) {
+    hours := Integer(hours), minutes := Integer(minutes)
+    if minutes > 59 || hours > 24 || hours = 24 && (!isEnd || minutes > 0)
+        throw ValueError("Times run from 00:00 to 23:59; only an end time may be 24:00.")
+    return hours * 60 + minutes
+}
+
 PeriodOfDate(text) {
     date := ParseStrictDate(text)
     return "FY " FinancialYearLabel(date.Month >= 7 ? date.Year + 1 : date.Year) " Q" (Floor(Mod(date.Month + 5, 12) / 3) + 1)
