@@ -46,7 +46,7 @@ ReadSettings(path) {
         applications.Push(name)
     }
 
-    holidayState := StrUpper(Trim(IniRead(path, "Holidays", "State", "")))
+    holidayState := StrUpper(Trim(IniRead(path, "Holidays", "State", defaults["Holidays"]["State"])))
     if holidayState != ""
         CheckHolidayState(holidayState)
 
@@ -73,6 +73,7 @@ SettingDefaults() {
     for section, pairs in Map(
         "Period", ["FinancialYearEnding", "2026", "Quarter", "4"],
         "Scope", ["Applications", ""],
+        "Holidays", ["State", ""],
         "Hotkeys", ["YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", ""]
     ) {
         values := Map()
