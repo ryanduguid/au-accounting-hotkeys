@@ -46,6 +46,10 @@ ReadSettings(path) {
         applications.Push(name)
     }
 
+    holidayState := StrUpper(Trim(IniRead(path, "Holidays", "State", "")))
+    if holidayState != ""
+        CheckHolidayState(holidayState)
+
     keys := Map()
     used := Map()
     used.CaseSense := "Off"
@@ -59,7 +63,7 @@ ReadSettings(path) {
         }
         keys[command] := key
     }
-    return {Year: Integer(year), Quarter: Integer(quarter), Applications: applications, Keys: keys}
+    return {Year: Integer(year), Quarter: Integer(quarter), Applications: applications, HolidayState: holidayState, Keys: keys}
 }
 
 ; Each section and setting the script reads, with its default. config.example.ini lists exactly these.

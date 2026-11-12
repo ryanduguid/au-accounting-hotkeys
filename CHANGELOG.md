@@ -14,7 +14,8 @@ No release has been tagged yet. This section lists everything on `main` since th
 - 12 editable draft snippets for records requests, reconciliation workpapers, journal support notes and review queries, with whitelisted date tokens. Local snippets go in `snippets.local` (#1).
 - Amount commands in whole cents: clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts, rounding exact half cents away from zero (#7).
 - Month-end lists, the financial year and quarter of a date, and the days between 2 dates (#7).
-- `DateOffset`, `DueDate`, `NextWeekday` and `AgeingBucket` for date arithmetic, payment terms and ageing; `DurationHours` for decimal hours between 2 times on one day; `DifferenceCheck` for divide-by-9 and half-amount hints on an out-of-balance difference (#45). None of the date commands moves a result off a public holiday, and `NextWeekday` skips weekends only.
+- `DateOffset`, `DueDate` and `AgeingBucket` for date arithmetic, payment terms and ageing; `DurationHours` for decimal hours between 2 times on one day; `DifferenceCheck` for divide-by-9 and half-amount hints on an out-of-balance difference (#45).
+- `BusinessDueDate` moves a due date off a weekend or public holiday, using the ATO's holiday tables for 1 July 2026 to 30 June 2027 and the `[Holidays] State` setting. It replaces `NextWeekday`, which skipped weekends only.
 - Library helpers that another script can include without starting the shortcuts or reading the clipboard. See [library helpers](docs/library.md).
 - The [command catalogue](docs/commands.md), with each command's input rules and limits (#20).
 - 1,000 reproducible generated-input cases against the native helpers, with fixed seeds (#14).

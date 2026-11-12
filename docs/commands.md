@@ -74,7 +74,7 @@ These commands use the same date parser and return an Australian date or a label
 | `DueDate` | `15/01/2026 net 30` | `14/02/2026` |
 | `DueDate` | `15/01/2026 30 days after month end` | `02/03/2026` |
 | `DueDate` | `15/01/2026 20th of next month` | `20/02/2026` |
-| `NextWeekday` | `06/11/2026` | `09/11/2026` |
+| `BusinessDueDate` | `25/12/2026` | `29/12/2026` |
 | `AgeingBucket` | `30/04/2026 to 30/06/2026` | `61 to 90 days overdue` |
 
 `DateOffset` takes a date, `+` or `-`, a whole number of up to 5 digits and `days` or `months` (`day` and `month` also work). A month offset keeps the day of the month; when the target month is shorter, the result is that month's last day, as Excel's `EDATE` does. Add 12 months for a year. Input is limited to 64 characters.
@@ -87,7 +87,12 @@ These commands use the same date parser and return an Australian date or a label
 
 Shorthand such as `30 days EOM` is rejected because suppliers read it in more than one way; write the terms out. The due date is not moved off a weekend or public holiday. Input is limited to 100 characters.
 
-`NextWeekday` returns the first Monday to Friday after the input date. It is not a business-day calculation, because it skips weekends only: it does not know public holidays, so `31/12/2026` gives `01/01/2027`, New Year's Day. Check the result against the holidays that apply to you.
+`BusinessDueDate` returns the input date when it is a business day, and otherwise the first business day after it. A business day is not a Saturday, Sunday or public holiday. Set `State` under `[Holidays]` in `config.ini` first:
+
+- `ATO` counts a public holiday for the whole of any State or Territory, as the ATO does for lodgment and payment due dates, so `25/09/2026` (the Friday before the AFL Grand Final, Victoria only) gives `28/09/2026`.
+- `ACT`, `NSW`, `NT`, `QLD`, `SA`, `TAS`, `VIC` or `WA` counts only that State's or Territory's holidays, so the same date stays `25/09/2026` for `NSW`.
+
+The holidays are the ATO's published tables for 1 July 2026 to 30 June 2027, and the command refuses a date outside that range rather than skipping weekends only. Following the reasoning in [au-fpa-pack's holiday list](https://github.com/ryanduguid/au-fpa-pack/blob/main/pyfpa/au/data/public_holidays.yaml), it counts only days that are public holidays for the whole of a State or Territory. It leaves out King's Birthday (WA) on 28 September 2026 and Melbourne Cup on 3 November 2026, which some regions replace with another day, and Christmas Eve and New Year's Eve, which are holidays from the evening only. The ATO's table moves those 4 days; this command does not, so its date can fall before the ATO's published date. Holiday dates can change during the year; check a result that matters against the official list. Input is limited to 64 characters.
 
 `AgeingBucket` takes the due date and the as-at date, in the same form as `DaysBetween`, and counts days past due: `Current` (on or before the due date), `1 to 30 days overdue`, `31 to 60 days overdue`, `61 to 90 days overdue` or `Over 90 days overdue`. These are 30-day steps from the due date; reports that age by calendar month or from the invoice date can place an amount differently. Input is limited to 200 characters.
 

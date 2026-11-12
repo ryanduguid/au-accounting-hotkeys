@@ -41,7 +41,8 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 | `DaysBetween(text)` | Second date minus first, from two dates on separate lines or joined by ` to `. |
 | `DateFromDays(date, days)`, `DateFromMonths(date, months)` | Shift a valid `{Year, Month, Day}` date by a whole number; an invalid source date or count throws `ValueError`. A month shift keeps the day or, if the target month lacks it, uses the month's last day. Results must fall in 1601 to 9999. |
 | `AustralianDateOf(date)` | `{Year, Month, Day}` to `dd/MM/yyyy`. |
-| `DateOffset(text)`, `DueDate(text)`, `NextWeekday(text)`, `AgeingBucket(text)` | The input-date commands of the same names. |
+| `DateOffset(text)`, `DueDate(text)`, `AgeingBucket(text)` | The input-date commands of the same names. |
+| `BusinessDueDate(text, state)` | The `BusinessDueDate` command, with `state` as `ATO` or a State or Territory code in capitals. |
 | `DurationHours(text)` | Decimal hours between 2 times on one day, with optional rounding. |
 
 ## Amount API
