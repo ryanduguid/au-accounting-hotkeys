@@ -17,7 +17,14 @@ $inputFunctions = @(
 function Find-BoundaryViolations([string]$Name, [string]$Source) {
     if ($Source -match '(?i)\bOnClipboardChange\b|\bClipboardAll\b') { 'Clipboard monitoring or snapshots' }
     if ($Name -ne 'clipboard.ahk' -and $Source -match '\bA_Clipboard\b') { 'Clipboard access outside adapter' }
-    if ($Name -ne 'accounting-hotkeys.ahk' -and $Source -match '\b(?:SendText|SendEvent|SendInput|ControlSend|ControlSendText)\s*\(') { 'Typing outside immediate hotkeys' }
+    $allowed = if ($Name -eq 'accounting-hotkeys.ahk') { @('SendText') } else { @() }
+    $denied = @($inputFunctions | Where-Object { $allowed -notcontains $_ })
+    # A name counts in any call form, Send(x), Send x or fn := Send, but not as a method
+    # or a quoted event name such as OnEvent("Click", ...). Win32 input APIs count anywhere,
+    # since DllCall names them in strings.
+    if ($Source -match ('(?<![\w."''])(?:' + ($denied -join '|') + ')\b') -or
+        $Source -match '\b(?:keybd_event|mouse_event|SendInput|PostMessage[AW]?|SendMessage[AW]?)\b' -or
+        $Source -match '(?m)^[ \t]*:[^:\s]*:[^\r\n]*::') { 'Typing outside immediate hotkeys' }
     if ($Name -eq 'snippets.ahk' -and $Source -match '\b(?:FileAppend|FileCopy|FileDelete|FileMove|FileSetAttrib|FileSetTime|IniWrite|RawWrite)\s*\(') { 'Snippet loader writes data' }
 }
 
@@ -45,7 +52,8 @@ if (@(Find-BoundaryViolations 'accounting-hotkeys.ahk' 'SendText(text)').Count -
 if (@(Find-BoundaryViolations 'picker.ahk' 'button.OnEvent("Click", handler)').Count -ne 0) { throw 'Picker event control failed.' }
 
 $root = Split-Path -Parent $PSScriptRoot
-$names = @('accounting-hotkeys.ahk', 'dates.ahk', 'text.ahk', 'identifiers.ahk', 'clipboard.ahk', 'snippets.ahk', 'commands.ahk', 'picker.ahk', 'amounts.ahk')
+$names = @(Get-ChildItem -LiteralPath $root -Filter '*.ahk' -File | ForEach-Object Name)
+if ($names -notcontains 'accounting-hotkeys.ahk') { throw 'Production sources not found.' }
 foreach ($name in $names) {
     $source = Get-Content -LiteralPath (Join-Path $root $name) -Raw
     $violations = @(Find-BoundaryViolations $name $source)
