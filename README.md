@@ -22,7 +22,7 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 
 ## Start
 
-1. Install [AutoHotkey v2](https://www.autohotkey.com/) on Windows.
+1. Install [AutoHotkey v2](https://www.autohotkey.com/) on Windows, or run `winget install --id AutoHotkey.AutoHotkey --exact` in a terminal.
 2. Download this repository using **Code**, then **Download ZIP**, and extract it.
 3. Double-click `accounting-hotkeys.ahk`.
 4. Open a blank text document and press **Insert**. It types `30/06/2026`.
@@ -171,11 +171,11 @@ The first command checks date boundaries, identifier algorithms, configuration, 
 
 GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
-CodeQL, actionlint and zizmor check the GitHub Actions workflows. Tagged releases run the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands.
+CodeQL, actionlint and zizmor check the GitHub Actions workflows. No release has been tagged yet; when one is, the release workflow runs the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands. For a firm's IT review, [what the script reads, types and stores](docs/it-review.md) lists each behaviour with a way to check it in the source.
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include with a change. [CHANGELOG.md](CHANGELOG.md) records what has changed.
 
 ## Licence
 
