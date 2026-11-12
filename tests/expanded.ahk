@@ -15,6 +15,7 @@ TestExpanded() {
     TestSnippetLabelsAndRecovery()
     TestSnippetLimits()
     TestPickerState()
+    TestPickerHolidayState()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
     AssertEqual(SettingsWith([["Hotkeys", "Picker", "!^Space"]]).Keys["Picker"], "^!Space", "Picker mapping normalised")
     AssertValueError(() => SettingsWith([["Hotkeys", "Picker", "Ins"]]), "Picker alias conflict rejected")
@@ -332,11 +333,27 @@ TestWorkpaperArithmetic() {
     for badTerms in ["15/01/2026 30th of next month", "15/01/2026 29th of next month", "15/01/2026 0th of next month", "15/01/2026 30 days EOM", "15/01/2026", "15/01/2026 net thirty", "31/12/9999 net 1", "15/12/9999 20th of next month", "net 30", "15/01/2026 net 30 net 30", "15/01/2026 net 10000", "15/01/2026`nnet 30`nnet 30", "15/01/2026 1nd of next month", "15/01/2026 2st of next month", "15/01/2026 3th of next month", "15/01/2026 11st of next month", "15/01/2026 12nd of next month", "15/01/2026 13rd of next month", "15/01/2026 21th of next month", "15/01/2026 22rd of next month"]
         AssertValueError(DueDate.Bind(badTerms), "Bad payment terms rejected: " badTerms)
 
-    ; 6 November 2026 is a Friday; 1 January 2027 is a public holiday the command does not know about.
-    for weekdayCase in [["06/11/2026", "09/11/2026"], ["07/11/2026", "09/11/2026"], ["08/11/2026", "09/11/2026"], ["09/11/2026", "10/11/2026"], ["2024-02-28", "29/02/2024"], ["31/12/2026", "01/01/2027"]]
-        AssertEqual(NextWeekday(weekdayCase[1]), weekdayCase[2], "Next weekday after " weekdayCase[1])
-    AssertValueError(() => NextWeekday("31/12/9999"), "Next weekday beyond 9999 rejected")
-    AssertValueError(() => NextWeekday("06/11/2026 + 1 day"), "Next weekday takes one date")
+    ; Dates from the ATO's tables for 1 July 2026 to 30 June 2027. 6 November 2026 is a Friday.
+    for business in [
+        ["06/11/2026", "ATO", "06/11/2026"], ["07/11/2026", "NSW", "09/11/2026"], ["01/07/2026", "ATO", "01/07/2026"], ["30/06/2027", "ATO", "30/06/2027"],
+        ; National: the day before Christmas stays, since Christmas Eve is a holiday from the evening only; Christmas Day
+        ; runs past the weekend and the Boxing Day substitute; New Year's Eve stays and New Year's Day moves.
+        ["24/12/2026", "ATO", "24/12/2026"], ["25/12/2026", "NSW", "29/12/2026"], ["31/12/2026", "NT", "31/12/2026"], ["01/01/2027", "WA", "04/01/2027"], ["26/03/2027", "TAS", "30/03/2027"],
+        ; Boxing Day 2026 and ANZAC Day 2027 fall on a weekend. Every State has a Boxing Day substitute;
+        ; VIC, SA and TAS have no ANZAC Day substitute.
+        ["26/12/2026", "ATO", "29/12/2026"], ["26/12/2026", "SA", "29/12/2026"], ["25/04/2027", "NSW", "27/04/2027"], ["25/04/2027", "VIC", "26/04/2027"], ["25/04/2027", "ATO", "27/04/2027"],
+        ; State-only holidays count for their State, and for every State under the ATO rule.
+        ["25/09/2026", "VIC", "28/09/2026"], ["25/09/2026", "NSW", "25/09/2026"], ["25/09/2026", "ATO", "28/09/2026"], ["05/10/2026", "QLD", "06/10/2026"], ["05/10/2026", "VIC", "05/10/2026"],
+        ["14/06/2027", "QLD", "14/06/2027"], ["14/06/2027", "SA", "15/06/2027"], ["07/06/2027", "WA", "08/06/2027"], ["03/08/2026", "NT", "04/08/2026"], ["03/08/2026", "ACT", "03/08/2026"],
+        ; Not holidays for the whole of the State, so left out.
+        ["28/09/2026", "WA", "28/09/2026"], ["03/11/2026", "VIC", "03/11/2026"]
+    ]
+        AssertEqual(BusinessDueDate(business[1], business[2]), business[3], "Business due date " business[1] " " business[2])
+    for outside in ["30/06/2026", "01/07/2027", "2024-02-28", "31/12/9999"]
+        AssertValueError(BusinessDueDate.Bind(outside, "ATO"), "Date outside the holiday list refused: " outside)
+    AssertValueError(() => BusinessDueDate("06/11/2026", ""), "Business due date needs a State")
+    AssertValueError(() => BusinessDueDate("06/11/2026", "Victoria"), "Unknown State refused")
+    AssertValueError(() => BusinessDueDate("06/11/2026 + 1 day", "ATO"), "Business due date takes one date")
 
     for ageing in [["30/06/2026 to 30/06/2026", "Current"], ["01/07/2026 to 30/06/2026", "Current"], ["29/06/2026 to 30/06/2026", "1 to 30 days overdue"], ["31/05/2026 to 30/06/2026", "1 to 30 days overdue"], ["30/05/2026 to 30/06/2026", "31 to 60 days overdue"], ["01/05/2026`n30/06/2026", "31 to 60 days overdue"], ["30/04/2026 to 30/06/2026", "61 to 90 days overdue"], ["01/04/2026 to 30/06/2026", "61 to 90 days overdue"], ["31/03/2026 to 30/06/2026", "Over 90 days overdue"], ["31/01/2024 to 01/03/2024", "1 to 30 days overdue"], ["31/01/2023 to 03/03/2023", "31 to 60 days overdue"]]
         AssertEqual(AgeingBucket(ageing[1]), ageing[2], "Ageing " ageing[1])
@@ -351,9 +368,9 @@ TestWorkpaperArithmetic() {
 }
 
 TestCatalogue() {
-    context := {Year: 2026, Quarter: 1, Timestamp: "20240229000000"}
+    context := {Year: 2026, Quarter: 1, HolidayState: "VIC", Timestamp: "20240229000000"}
     identifiers := Map()
-    samples := Map("DaysBetween", "2024-02-29 to 2024-03-31", "DateOffset", "2024-02-29 + 1 month", "DueDate", "2024-02-29 net 30",
+    samples := Map("DaysBetween", "2024-02-29 to 2024-03-31", "DateOffset", "2024-02-29 + 1 month", "DueDate", "2024-02-29 net 30", "BusinessDueDate", "25/09/2026",
         "AgeingBucket", "2024-02-29 to 2024-03-31", "DurationHours", "09:00 to 17:30", "DifferenceCheck", "18.00")
     for entry in BuiltinCommands() {
         AssertEqual(identifiers.Has(entry.Id), false, "Unique command identifier")
@@ -530,13 +547,24 @@ class FakeClipboard {
 }
 
 NewTestPicker(fake, catalogue := 0) {
-    return CommandPicker({Year: 2026, Quarter: 4}, IsObject(catalogue) ? catalogue : BuiltinCommands(), ObjBindMethod(fake, "ReadText"), ObjBindMethod(fake, "WriteText"), ObjBindMethod(fake, "Confirm"))
+    return CommandPicker({Year: 2026, Quarter: 4, HolidayState: "VIC"}, IsObject(catalogue) ? catalogue : BuiltinCommands(), ObjBindMethod(fake, "ReadText"), ObjBindMethod(fake, "WriteText"), ObjBindMethod(fake, "Confirm"))
 }
 
 ChooseCommand(picker, id) {
     picker.Search.Value := id
     picker.RefreshList()
     AssertEqual(picker.SelectedId, id, "Command selected " id)
+}
+
+TestPickerHolidayState() {
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    try {
+        ChooseCommand(palette, "BusinessDueDate")
+        fake.Value := "25/09/2026"
+        palette.LoadInput()
+        AssertEqual(palette.Output, "28/09/2026", "Picker passes the [Holidays] State")
+    } finally palette.Close()
 }
 
 TestPickerState() {
