@@ -107,8 +107,11 @@ FilterCommands(commands, query) {
 }
 
 SnippetCommand(item) {
-    command := MakeCommand("Snippet:" item.Name, StrReplace(item.Name, "-", " "), "Draft snippets", (c, t) => ExpandSnippet(item.Body, c))
+    fields := SnippetFields(item.Body)
+    ; A snippet with fields takes its answers as input: at most 200 characters and a line break each.
+    command := MakeCommand("Snippet:" item.Name, StrReplace(item.Name, "-", " "), "Draft snippets", (c, t) => ExpandSnippet(item.Body, c, t), fields.Length > 0, fields.Length * 202)
     command.SearchText := item.Body
+    command.Fields := fields
     return command
 }
 

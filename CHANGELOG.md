@@ -12,6 +12,7 @@ No release has been tagged yet. This section lists everything on `main` since th
 - A copy-only command picker, off until `Picker=` is set under `[Hotkeys]`. It searches commands by name, category, identifier and snippet text, previews each result and copies only the previewed text, asking first when a cell begins with `=`, `+`, `-` or `@` (#1, #6).
 - Financial-year and quarter starts, ends, ranges, ISO dates and filename labels; ABN and ACN formatting with a format and checksum report; text clean-up, numbering, sorting and deduplication; CSV, tab-separated and quoted-list output (#1).
 - 12 editable draft snippets for records requests, reconciliation workpapers, journal support notes and review queries, with whitelisted date tokens. Local snippets go in `snippets.local` (#1).
+- Prompted fields in snippets: `{{ASK:label}}` asks for one line of text when the snippet is chosen, previewed in the picker with up to 10 fields of 200 characters each.
 - Amount commands in whole cents: clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts, rounding exact half cents away from zero (#7).
 - Month-end lists, the financial year and quarter of a date, and the days between 2 dates (#7).
 - `DateOffset`, `DueDate` and `AgeingBucket` for date arithmetic, payment terms and ageing; `DurationHours` for decimal hours between 2 times on one day; `DifferenceCheck` for divide-by-9 and half-amount hints on an out-of-balance difference (#45).
