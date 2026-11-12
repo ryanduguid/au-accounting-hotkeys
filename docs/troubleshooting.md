@@ -4,7 +4,7 @@ Test shortcuts in a blank document before using them in a workpaper.
 
 ## The script does not start
 
-Use AutoHotkey v2. The script requires v2 syntax. If a settings error appears, check the ending year, quarter, application list and hotkey mappings. A duplicate key, unknown command or unsupported key syntax prevents startup. Compare with `config.example.ini`.
+Use AutoHotkey v2. The script requires v2 syntax. If a settings error appears, check the ending year, quarter, application list and hotkey mappings. A duplicate key, an unknown or repeated section or setting (such as a misspelt `FinancialYearEnding`) or unsupported key syntax prevents startup. Compare with `config.example.ini`.
 
 The script needs permission to create `config.ini` on its first run. Extract it into a writable folder. Settings and snippets should stay in a folder your firm's policy permits.
 

@@ -24,14 +24,16 @@ StartHotkeys() {
 ReadSettings(path) {
     if !FileExist(path)
         throw ValueError("Settings file does not exist: " path)
-    year := IniRead(path, "Period", "FinancialYearEnding", "2026")
-    quarter := IniRead(path, "Period", "Quarter", "4")
+    defaults := SettingDefaults()
+    CheckSettingNames(path, defaults)
+    year := IniRead(path, "Period", "FinancialYearEnding", defaults["Period"]["FinancialYearEnding"])
+    quarter := IniRead(path, "Period", "Quarter", defaults["Period"]["Quarter"])
     ValidateYear(year)
     if !RegExMatch(quarter, "^[1-4]\z")
         throw ValueError("Quarter must be 1, 2, 3 or 4.")
 
     applications := []
-    applicationList := Trim(IniRead(path, "Scope", "Applications", ""))
+    applicationList := Trim(IniRead(path, "Scope", "Applications", defaults["Scope"]["Applications"]))
     for name in StrSplit(applicationList, ",") {
         name := Trim(name)
         if name = "" {
@@ -47,17 +49,7 @@ ReadSettings(path) {
     keys := Map()
     used := Map()
     used.CaseSense := "Off"
-    defaults := Map()
-    defaults.CaseSense := "Off"
-    defaults.Set("YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", "")
-    for line in StrSplit(IniRead(path, "Hotkeys", , ""), "`n", "`r") {
-        if !InStr(line, "=")
-            continue
-        configured := Trim(SubStr(line, 1, InStr(line, "=") - 1))
-        if !defaults.Has(configured)
-            throw ValueError("Unknown hotkey command: " configured)
-    }
-    for command, defaultKey in defaults {
+    for command, defaultKey in defaults["Hotkeys"] {
         key := Trim(IniRead(path, "Hotkeys", command, defaultKey))
         if key != "" {
             key := NormaliseHotkey(key)
@@ -68,6 +60,51 @@ ReadSettings(path) {
         keys[command] := key
     }
     return {Year: Integer(year), Quarter: Integer(quarter), Applications: applications, Keys: keys}
+}
+
+; Each section and setting the script reads, with its default. config.example.ini lists exactly these.
+SettingDefaults() {
+    sections := Map()
+    sections.CaseSense := "Off"
+    for section, pairs in Map(
+        "Period", ["FinancialYearEnding", "2026", "Quarter", "4"],
+        "Scope", ["Applications", ""],
+        "Hotkeys", ["YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", ""]
+    ) {
+        values := Map()
+        values.CaseSense := "Off"
+        values.Set(pairs*)
+        sections[section] := values
+    }
+    return sections
+}
+
+; IniRead returns the first match and falls back to the default for a missing name, so a
+; misspelt or repeated section or setting would otherwise change the period or scope silently.
+CheckSettingNames(path, defaults) {
+    sections := Map()
+    sections.CaseSense := "Off"
+    for section in StrSplit(IniRead(path, , , ""), "`n", "`r") {
+        if section = ""
+            continue
+        if !defaults.Has(section)
+            throw ValueError("Unknown settings section: [" section "]")
+        if sections.Has(section)
+            throw ValueError("Repeated settings section: [" section "]")
+        sections[section] := true
+        names := Map()
+        names.CaseSense := "Off"
+        for line in StrSplit(IniRead(path, section, , ""), "`n", "`r") {
+            if !InStr(line, "=")
+                continue
+            name := Trim(SubStr(line, 1, InStr(line, "=") - 1))
+            if !defaults[section].Has(name)
+                throw ValueError("Unknown " section " setting: " name)
+            if names.Has(name)
+                throw ValueError("Repeated " section " setting: " name)
+            names[name] := true
+        }
+    }
 }
 
 NormaliseHotkey(key) {

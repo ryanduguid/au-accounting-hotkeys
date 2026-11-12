@@ -26,6 +26,9 @@ TestExpanded() {
     AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2026`n[Scope]`nApplications=`n[Period]`nFinancialYearEnding=2027`n"), "Repeated section rejected", "Repeated settings section: [Period]")
     AssertValueError(() => SettingsWith([["Hotkeys", "Pickre", "^!Space"]]), "Misspelt hotkey command rejected", "Unknown Hotkeys setting: Pickre")
     AssertEqual(SettingsText("[Period]`nFinancialYearEnding=2027`n").Year, 2027, "Partial settings file keeps defaults")
+    for section, values in SettingDefaults()
+        for name, value in values
+            AssertEqual(IniRead(A_ScriptDir "\..\config.example.ini", section, name, "(missing)"), value, "Distributed default " section " " name)
     AssertEqual(ReadSettings(A_ScriptDir "\..\examples\excel-word.ini").Applications.Length, 2, "Excel and Word example loads")
     AssertEqual(ReadSettings(A_ScriptDir "\..\examples\picker-only.ini").Year, 2024, "Picker-only example loads")
     legacyPath := A_Temp "\au-hotkeys-legacy-" ProcessExist() ".ini"
