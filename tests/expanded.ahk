@@ -149,6 +149,8 @@ TestIdentifiersAndText() {
     AssertValueError(() => CheckedText(RepeatText("a", 32769)), "Oversize input rejected")
     AssertValueError(() => CheckedText("a" Chr(0) "b"), "NUL input rejected")
     AssertValueError(() => CheckedText("a" Chr(8)), "Backspace input rejected")
+    for separator in [0x85, 0x2028, 0x2029]
+        AssertValueError(CheckedText.Bind("a" Chr(separator) "b"),"Unicode line separator rejected " Format("U+{:04X}", separator))
     for formulaIndex, formula in ["=1+1", " @SUM(A1:A2)", "a`t+2", "label`r`n - item", Chr(0xA0) "=A1", CSVRow("=1+1,2`nx")]
         AssertEqual(LooksLikeFormula(formula), true, "Formula-like cell recognised " formulaIndex)
     AssertEqual(LooksLikeFormula("ordinary = prose"), false, "Ordinary prose avoids formula warning")
