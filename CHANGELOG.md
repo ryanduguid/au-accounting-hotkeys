@@ -20,7 +20,7 @@ The first release. This section lists everything on `main` from the first commit
 - Amount commands in whole cents: clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts, rounding exact half cents away from zero (#7).
 - Month-end lists, the financial year and quarter of a date, and the days between 2 dates (#7).
 - `DateOffset`, `DueDate` and `AgeingBucket` for date arithmetic, payment terms and ageing; `DurationHours` for decimal hours between 2 times on one day; `DifferenceCheck` for divide-by-9 and half-amount hints on an out-of-balance difference (#45).
-- `BusinessDueDate` moves a due date off a weekend or public holiday, using the ATO's holiday tables for 1 July 2026 to 30 June 2027 and the `[Holidays] State` setting. It replaces `NextWeekday`, which skipped weekends only.
+- `BusinessDueDate` moves a due date off a weekend or public holiday, using every day in the ATO's holiday tables for 1 July 2026 to 30 June 2027, including the part-State and part-day holidays it lists (#54) and the `[Holidays] State` setting. It replaces `NextWeekday`, which skipped weekends only.
 - Library helpers that another script can include without starting the shortcuts or reading the clipboard. See [library helpers](docs/library.md).
 - The [command catalogue](docs/commands.md), with each command's input rules and limits (#20).
 - 1,000 reproducible generated-input cases against the native helpers, with fixed seeds (#14).
@@ -40,7 +40,6 @@ The first release. This section lists everything on `main` from the first commit
 
 ### Known issues
 
-- `BusinessDueDate` leaves out 4 days that the ATO's table of lodgment and payment dates lists: King's Birthday (WA) on 28 September 2026, Melbourne Cup on 3 November 2026, Christmas Eve and New Year's Eve. A due date that falls on one of them comes out earlier than the ATO's date. A later release will match the ATO's table.
 - `BusinessDueDate` holds public holidays for 1 July 2026 to 30 June 2027 and refuses a date outside that range.
 - Paste into individual accounting applications, alternate keyboard layouts and remote desktops has not been tested.
 
