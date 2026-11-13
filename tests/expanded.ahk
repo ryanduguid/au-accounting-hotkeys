@@ -18,7 +18,20 @@ TestExpanded() {
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
     AssertEqual(SettingsWith([["Hotkeys", "Picker", "!^Space"]]).Keys["Picker"], "^!Space", "Picker mapping normalised")
     AssertValueError(() => SettingsWith([["Hotkeys", "Picker", "Ins"]]), "Picker alias conflict rejected")
-    AssertValueError(() => SettingsWith([["Hotkeys", "Pickre", "^!Space"]]), "Misspelt hotkey command rejected")
+    AssertValueError(() => SettingsWith([["Period", "FinancialYearEnd", "2027"]]), "Misspelt period setting rejected", "Unknown Period setting: FinancialYearEnd")
+    AssertValueError(() => SettingsWith([["Scope", "Application", "EXCEL.EXE"]]), "Misspelt scope setting rejected", "Unknown Scope setting: Application")
+    AssertValueError(() => SettingsWith([["Peroid", "FinancialYearEnding", "2027"]]), "Misspelt section rejected", "Unknown settings section: [Peroid]")
+    AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2027`nQuarter 3`n"), "Setting without = rejected", "Setting in [Period] has no '=': Quarter 3")
+    AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2026`nQuarter=4`nFinancialYearEnding=2027`n"), "Repeated period setting rejected", "Repeated Period setting: FinancialYearEnding")
+    AssertValueError(() => SettingsText("[Scope]`nApplications=EXCEL.EXE`napplications=`n"), "Repeated setting in another case rejected", "Repeated Scope setting: applications")
+    AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2026`n[Scope]`nApplications=`n[Period]`nFinancialYearEnding=2027`n"), "Repeated section rejected", "Repeated settings section: [Period]")
+    AssertValueError(() => SettingsWith([["Hotkeys", "Pickre", "^!Space"]]), "Misspelt hotkey command rejected", "Unknown Hotkeys setting: Pickre")
+    AssertEqual(SettingsText("[Period]`nFinancialYearEnding=2027`n").Year, 2027, "Partial settings file keeps defaults")
+    for section, values in SettingDefaults()
+        for name, value in values
+            AssertEqual(IniRead(A_ScriptDir "\..\config.example.ini", section, name, "(missing)"), value, "Distributed default " section " " name)
+    AssertEqual(ReadSettings(A_ScriptDir "\..\examples\excel-word.ini").Applications.Length, 2, "Excel and Word example loads")
+    AssertEqual(ReadSettings(A_ScriptDir "\..\examples\picker-only.ini").Year, 2024, "Picker-only example loads")
     legacyPath := A_Temp "\au-hotkeys-legacy-" ProcessExist() ".ini"
     FileCopy(A_ScriptDir "\..\config.example.ini", legacyPath)
     try {

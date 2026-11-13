@@ -120,7 +120,7 @@ Leave `Applications` blank for all applications. To enable shortcuts only in Exc
 Applications=EXCEL.EXE,WINWORD.EXE
 ```
 
-Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown hotkey commands and invalid settings stop startup with an error message. The 5 recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear` and `Picker`; additional commands are available through the picker.
+Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown or repeated sections and settings, and invalid values stop startup with an error message. The 5 recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear` and `Picker`; additional commands are available through the picker.
 
 `config.ini` is ignored by Git so your settings remain local. Keyboard layouts and application shortcuts can differ; test your mappings in the applications you use.
 

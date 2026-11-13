@@ -71,10 +71,12 @@ AssertEqual(actual, expected, description) {
     checks += 1
 }
 
-AssertValueError(callback, description) {
+AssertValueError(callback, description, message := "") {
     global checks
     try callback()
-    catch ValueError {
+    catch ValueError as failure {
+        if message != "" && failure.Message !== message
+            throw Error(description ": expected '" message "', got '" failure.Message "'.")
         checks += 1
         return
     }
@@ -89,6 +91,17 @@ SettingsWith(changes) {
     try {
         for change in changes
             IniWrite(change[3], path, change[1], change[2])
+        return ReadSettings(path)
+    } finally FileDelete(path)
+}
+
+; Writes the settings file verbatim, since IniWrite cannot repeat a key or section.
+SettingsText(text) {
+    static sequence := 0
+    sequence += 1
+    path := A_Temp "\au-accounting-hotkeys-text-" ProcessExist() "-" sequence ".ini"
+    FileAppend(text, path, "UTF-8-RAW")
+    try {
         return ReadSettings(path)
     } finally FileDelete(path)
 }
