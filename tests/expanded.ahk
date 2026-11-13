@@ -217,6 +217,7 @@ TestSnippetFields() {
     AssertEqual(SnippetCommand({Name: "plain", Body: "Plain"}).Input, false, "Snippet without fields takes no input")
     catalogue := BuiltinCommands()
     catalogue.Push(command)
+    catalogue.Push(SnippetCommand({Name: "field-formula", Body: "{{ASK:Amount}}"}))
     fake := FakeClipboard()
     palette := NewTestPicker(fake, catalogue)
     try {
@@ -229,6 +230,12 @@ TestSnippetFields() {
         AssertEqual(palette.CopyResult(), true, "Completed snippet copies")
         AssertEqual(fake.Output, completed, "Copy uses the completed preview")
         AssertEqual(fake.Reads, 0, "Typed answers do not read the clipboard")
+        ChooseCommand(palette, "Snippet:field-formula")
+        ChangeTestInput(palette, "=1+1")
+        AssertEqual(palette.Output, "=1+1", "Formula-like answer previewed")
+        AssertEqual(palette.CopyResult(), false, "Denied formula answer is not copied")
+        AssertEqual(fake.Confirms, 1, "Formula-like answer asks for confirmation")
+        AssertEqual(fake.Writes, 1, "Denied formula answer writes nothing to the clipboard")
     } finally palette.Close()
 }
 
