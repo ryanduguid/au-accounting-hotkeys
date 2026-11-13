@@ -98,13 +98,13 @@ FuzzWorkpaperArithmetic(rng) {
     AssertEqual((shifted.Year * 12 + shifted.Month) - (date.Year * 12 + date.Month), months, "Generated month offset moves whole months")
     AssertEqual(shifted.Day, Min(date.Day, DaysInMonth(shifted.Year, shifted.Month)), "Generated month offset keeps the day or ends the month")
 
-    ; The longest run of weekends and holidays in the list is 4 days, from Christmas Day 2026 and Good Friday 2027.
+    ; The longest run of weekends and holidays in the list is 5 days, from Christmas Eve 2026.
     listed := DateOffset("01/07/2026 + " rng.Next(0, 364) " days")
     state := ["ATO", "ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"][rng.Next(1, 9)]
     due := BusinessDueDate(listed, state)
     gap := Integer(DaysBetween(listed " to " due))
     weekday := Integer(FormatTime(ConvertDate(due, "File"), "WDay"))
-    AssertEqual(weekday >= 2 && weekday <= 6 && gap >= 0 && gap <= 4, true, "Generated business due date is a weekday on or soon after the date")
+    AssertEqual(weekday >= 2 && weekday <= 6 && gap >= 0 && gap <= 5, true, "Generated business due date is a weekday on or soon after the date")
     AssertEqual(BusinessDueDate(due, state), due, "Generated business due date is itself a business day")
 
     ; Decimal hours stay within half a hundredth of the exact minutes.
