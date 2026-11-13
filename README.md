@@ -178,7 +178,7 @@ The first command checks date boundaries, identifier algorithms, configuration, 
 
 GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
-CodeQL, actionlint and zizmor check the GitHub Actions workflows. No release has been tagged yet; when one is, the release workflow runs the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands. For a firm's IT review, [what the script reads, types and stores](docs/it-review.md) lists each behaviour with a way to check it in the source.
+CodeQL, actionlint and zizmor check the GitHub Actions workflows. For each tagged release, the release workflow runs the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands. For a firm's IT review, [what the script reads, types and stores](docs/it-review.md) lists each behaviour with a way to check it in the source.
 
 ## Contribute
 
