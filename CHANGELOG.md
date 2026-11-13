@@ -4,7 +4,11 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
-No release has been tagged yet. This section lists everything on `main` since the first commit on 6 October 2026.
+Nothing yet.
+
+## [1.0.0] - 2026-11-14
+
+The first release. This section lists everything on `main` from the first commit on 6 October 2026.
 
 ### Added
 
@@ -33,5 +37,11 @@ No release has been tagged yet. This section lists everything on `main` since th
 
 - The picker reads the clipboard back after a copy and reports 'Copy not confirmed' when another program changed it (#37).
 - Commands, snippets and clipboard text refuse U+0085, U+2028 or U+2029, which line-based commands would otherwise treat as part of a line.
+
+### Known issues
+
+- `BusinessDueDate` leaves out 4 days that the ATO's table of lodgment and payment dates lists: King's Birthday (WA) on 28 September 2026, Melbourne Cup on 3 November 2026, Christmas Eve and New Year's Eve. A due date that falls on one of them comes out earlier than the ATO's date. A later release will match the ATO's table.
+- `BusinessDueDate` holds public holidays for 1 July 2026 to 30 June 2027 and refuses a date outside that range.
+- Paste into individual accounting applications, alternate keyboard layouts and remote desktops has not been tested.
 
 README badges, banners and house style (#3, #9, #10, #17, #18, #19, #21, #23, #26, #27, #28, #29, #33, #34, #35), action updates (#4, #16, #24, #31, #32, #46) and an easter egg (#25) complete the history.
