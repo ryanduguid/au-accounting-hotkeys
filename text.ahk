@@ -5,7 +5,7 @@ CheckedText(text, maximum := 32768) {
         throw ValueError("Text must not be empty.")
     if StrLen(text) > maximum
         throw ValueError("Text exceeds the " maximum " character limit; it was not truncated.")
-    if RegExMatch(text, "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
+    if RegExMatch(text, "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{85}\x{2028}\x{2029}]")
         throw ValueError("Text contains unsupported control characters.")
     return text
 }

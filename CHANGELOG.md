@@ -32,5 +32,6 @@ No release has been tagged yet. This section lists everything on `main` since th
 ### Fixed
 
 - The picker reads the clipboard back after a copy and reports 'Copy not confirmed' when another program changed it (#37).
+- Commands, snippets and clipboard text refuse U+0085, U+2028 or U+2029, which line-based commands would otherwise treat as part of a line.
 
 README badges, banners and house style (#3, #9, #10, #17, #18, #19, #21, #23, #26, #27, #28, #29, #33, #34, #35), action updates (#4, #16, #24, #31, #32, #46) and an easter egg (#25) complete the history.

@@ -152,7 +152,7 @@ Negative results begin with a minus sign, so copying them asks for the spreadshe
 
 ## Text and filenames
 
-Input and output are limited to 32,768 UTF-16 code units. NUL, backspace, DEL and unsupported ASCII control characters are rejected. Tabs and line endings are accepted where the command allows them. Commands reject an empty transformed result.
+Input and output are limited to 32,768 UTF-16 code units. NUL, backspace, DEL, unsupported ASCII control characters and the Unicode line separators U+0085, U+2028 and U+2029 are rejected. Tabs and line endings are accepted where the command allows them. Commands reject an empty transformed result.
 
 | Identifier | Behaviour |
 | --- | --- |
