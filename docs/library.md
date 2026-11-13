@@ -63,6 +63,6 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 
 ## Commands and tests
 
-`BuiltinCommands()` returns the fixed registry. `ProduceCommand(command, context, input := "")` validates input/output limits around a producer. `FilterCommands(commands, query)` performs literal search. User snippets supply text bodies; callbacks are defined only in repository source.
+`BuiltinCommands()` returns the fixed registry. `ProduceCommand(command, context, input := "")` validates input/output limits around a producer. Its context holds `Year`, `Quarter`, `HolidayState` and `Timestamp`; `BusinessDueDate` reads `HolidayState`. `FilterCommands(commands, query)` performs literal search. User snippets supply text bodies; callbacks are defined only in repository source.
 
 The picker accepts injected reader, writer and formula-confirmation callbacks. The writer returns the clipboard text it reads back; copy reports success only when that text matches the preview. The tests use `FakeClipboard`, so loading, copying, refusing a formula and preserving a preview can be verified without accessing the system clipboard. Keep production clipboard access in `clipboard.ahk`.

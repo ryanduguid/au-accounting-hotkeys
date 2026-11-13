@@ -100,8 +100,10 @@ CheckSettingNames(path, defaults) {
         names := Map()
         names.CaseSense := "Off"
         for line in StrSplit(IniRead(path, section, , ""), "`n", "`r") {
-            if !InStr(line, "=")
+            if Trim(line) = ""
                 continue
+            if !InStr(line, "=")
+                throw ValueError("Setting in [" section "] has no '=': " Trim(line))
             name := Trim(SubStr(line, 1, InStr(line, "=") - 1))
             if !defaults[section].Has(name)
                 throw ValueError("Unknown " section " setting: " name)
