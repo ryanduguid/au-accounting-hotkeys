@@ -21,6 +21,7 @@ TestExpanded() {
     AssertValueError(() => SettingsWith([["Period", "FinancialYearEnd", "2027"]]), "Misspelt period setting rejected", "Unknown Period setting: FinancialYearEnd")
     AssertValueError(() => SettingsWith([["Scope", "Application", "EXCEL.EXE"]]), "Misspelt scope setting rejected", "Unknown Scope setting: Application")
     AssertValueError(() => SettingsWith([["Peroid", "FinancialYearEnding", "2027"]]), "Misspelt section rejected", "Unknown settings section: [Peroid]")
+    AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2027`nQuarter 3`n"), "Setting without = rejected", "Setting in [Period] has no '=': Quarter 3")
     AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2026`nQuarter=4`nFinancialYearEnding=2027`n"), "Repeated period setting rejected", "Repeated Period setting: FinancialYearEnding")
     AssertValueError(() => SettingsText("[Scope]`nApplications=EXCEL.EXE`napplications=`n"), "Repeated setting in another case rejected", "Repeated Scope setting: applications")
     AssertValueError(() => SettingsText("[Period]`nFinancialYearEnding=2026`n[Scope]`nApplications=`n[Period]`nFinancialYearEnding=2027`n"), "Repeated section rejected", "Repeated settings section: [Period]")
