@@ -211,13 +211,12 @@ Ordinal(day) {
 
 ; Weekday public holidays for the whole of a State or Territory, 1 July 2026 to 30 June 2027, from
 ; Tables 1 and 2 of the ATO's 'Lodgment and payment dates on weekends or public holidays' (last updated
-; 1 July 2026, read 13 November 2026):
+; 1 July 2026, read 14 November 2026):
 ; https://www.ato.gov.au/tax-and-super-professionals/for-tax-professionals/prepare-and-lodge/registered-agent-lodgment-program/lodgment-and-payment-dates-on-weekends-or-public-holidays
 ; A holiday on a weekend needs no entry; the tables list its substitute weekday where a State has one.
-; The tables also list 4 days left out here, as ryanduguid/au-fpa-pack does in
-; pyfpa/au/data/public_holidays.yaml (at 63baa435), which argues the rule from the statute: King's
-; Birthday (WA) on 28 September 2026 and Melbourne Cup on 3 November 2026 are not holidays for the
-; whole of the State, and Christmas Eve and New Year's Eve are holidays from the evening only.
+; Every day in the tables is here, King's Birthday (WA) on 28 September, Melbourne Cup on 3 November,
+; Christmas Eve and New Year's Eve 2026 included, so a result matches the ATO's published date (Ryan
+; Duguid's decision, 14 November 2026, as for ryanduguid/au-fpa-pack).
 ; shortcut: one reviewed financial year; extend the list and the range in BusinessDueDate from the
 ; ATO's next tables, or each jurisdiction's official list, and date the new source here.
 HolidayStates() {
@@ -225,9 +224,13 @@ HolidayStates() {
     static holidays := Map(
         "20260803", "NT",
         "20260925", "VIC",
+        "20260928", "WA",
         "20261005", "ACT NSW QLD SA",
+        "20261103", "VIC",
+        "20261224", "NT QLD SA",
         "20261225", all,
         "20261228", all,
+        "20261231", "NT SA",
         "20270101", all,
         "20270126", all,
         "20270301", "WA",
