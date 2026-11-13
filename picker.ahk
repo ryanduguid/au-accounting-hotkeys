@@ -126,7 +126,7 @@ class CommandPicker {
             return
         }
         try {
-            context := {Year: this.Settings.Year, Quarter: this.Settings.Quarter, Timestamp: A_Now}
+            context := {Year: this.Settings.Year, Quarter: this.Settings.Quarter, HolidayState: this.Settings.HolidayState, Timestamp: A_Now}
             output := ProduceCommand(this.Selected, context, this.Input.Value)
             this.Output := output
             this.Preview.Value := output

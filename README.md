@@ -69,7 +69,7 @@ The picker includes 65 built-in commands and 12 draft snippets:
 - Copy financial-year and quarter starts, ends, ranges, ISO dates and filename labels.
 - List the selected year's month ends.
 - Convert one explicit Australian, ISO or compact date, find its month boundaries or its financial year and quarter, or count the days between 2 dates.
-- Add days or months to a date, work out a due date from payment terms, find the next weekday and age an overdue amount.
+- Add days or months to a date, work out a due date from payment terms, move a due date off a weekend or public holiday and age an overdue amount.
 - Turn 2 times on one day into decimal hours.
 - Clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts.
 - Get the divide-by-9 and half-amount hints for a reconciliation difference.
@@ -93,6 +93,9 @@ Quarter=4
 
 [Scope]
 Applications=
+
+[Holidays]
+State=
 
 [Hotkeys]
 YearEnd=Insert
@@ -119,6 +122,8 @@ Leave `Applications` blank for all applications. To enable shortcuts only in Exc
 [Scope]
 Applications=EXCEL.EXE,WINWORD.EXE
 ```
+
+Before using `BusinessDueDate`, set `State` under `[Holidays]` to `ATO`, which counts a holiday for the whole of any State or Territory, or to one of `ACT`, `NSW`, `NT`, `QLD`, `SA`, `TAS`, `VIC` or `WA`. Its holiday list covers 1 July 2026 to 30 June 2027. It does not count 28 September, 3 November, 24 December or 31 December 2026, which are not holidays for the whole of a State or Territory, so on those dates it gives an earlier date than the ATO's table; see the [command catalogue](docs/commands.md#date-arithmetic).
 
 Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown or repeated sections and settings, and invalid values stop startup with an error message. The 5 recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear` and `Picker`; additional commands are available through the picker.
 

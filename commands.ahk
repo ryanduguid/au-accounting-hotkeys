@@ -44,7 +44,7 @@ BuiltinCommands() {
         MakeCommand("DaysBetween", "Days from first to second input date", "Input dates", (c, t) => DaysBetween(t), true, 200),
         MakeCommand("DateOffset", "Input date plus or minus days or months", "Input dates", (c, t) => DateOffset(t), true, 64),
         MakeCommand("DueDate", "Due date from invoice date and payment terms", "Input dates", (c, t) => DueDate(t), true, 100),
-        MakeCommand("NextWeekday", "Next weekday after input date; public holidays not checked", "Input dates", (c, t) => NextWeekday(t), true, 64),
+        MakeCommand("BusinessDueDate", "Due date moved to the next business day after a weekend or public holiday", "Input dates", (c, t) => BusinessDueDate(t, c.HolidayState), true, 64),
         MakeCommand("AgeingBucket", "Ageing bucket from due date to as-at date", "Input dates", (c, t) => AgeingBucket(t), true, 200),
         MakeCommand("DurationHours", "Decimal hours between 2 times on one day", "Input times", (c, t) => DurationHours(t), true, 64),
         MakeCommand("ABNFormat", "Format ABN with spaces", "Identifiers", (c, t) => FormatABN(t), true, 64),

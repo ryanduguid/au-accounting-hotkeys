@@ -209,11 +209,65 @@ Ordinal(day) {
     }
 }
 
-; Skips Saturdays and Sundays only. Public holidays are not checked, so this is not a business day.
-NextWeekday(text) {
+; Weekday public holidays for the whole of a State or Territory, 1 July 2026 to 30 June 2027, from
+; Tables 1 and 2 of the ATO's 'Lodgment and payment dates on weekends or public holidays' (last updated
+; 1 July 2026, read 13 November 2026):
+; https://www.ato.gov.au/tax-and-super-professionals/for-tax-professionals/prepare-and-lodge/registered-agent-lodgment-program/lodgment-and-payment-dates-on-weekends-or-public-holidays
+; A holiday on a weekend needs no entry; the tables list its substitute weekday where a State has one.
+; The tables also list 4 days left out here, as ryanduguid/au-fpa-pack does in
+; pyfpa/au/data/public_holidays.yaml (at 63baa435), which argues the rule from the statute: King's
+; Birthday (WA) on 28 September 2026 and Melbourne Cup on 3 November 2026 are not holidays for the
+; whole of the State, and Christmas Eve and New Year's Eve are holidays from the evening only.
+; shortcut: one reviewed financial year; extend the list and the range in BusinessDueDate from the
+; ATO's next tables, or each jurisdiction's official list, and date the new source here.
+HolidayStates() {
+    static all := "ACT NSW NT QLD SA TAS VIC WA"
+    static holidays := Map(
+        "20260803", "NT",
+        "20260925", "VIC",
+        "20261005", "ACT NSW QLD SA",
+        "20261225", all,
+        "20261228", all,
+        "20270101", all,
+        "20270126", all,
+        "20270301", "WA",
+        "20270308", "ACT SA TAS VIC",
+        "20270326", all,
+        "20270329", all,
+        "20270426", "ACT NSW NT QLD WA",
+        "20270503", "NT QLD",
+        "20270531", "ACT",
+        "20270607", "WA",
+        "20270614", "ACT NSW NT SA TAS VIC"
+    )
+    return holidays
+}
+
+CheckHolidayState(state) {
+    if !RegExMatch(state, "^(?:ATO|ACT|NSW|NT|QLD|SA|TAS|VIC|WA)\z")
+        throw ValueError("Holidays State must be ATO, ACT, NSW, NT, QLD, SA, TAS, VIC or WA.")
+}
+
+; The due date itself when it is a business day, otherwise the first business day after it. A business
+; day is not a Saturday, Sunday or public holiday. With state ATO, a holiday for the whole of any State
+; or Territory counts everywhere, as for ATO due dates (Taxation Administration Act 1953 s 8AAZMB and
+; sch 1 s 388-52); otherwise only the named State's or Territory's holidays count.
+BusinessDueDate(text, state) {
+    if state = ""
+        throw ValueError("Set State under [Holidays] in config.ini to ATO, or to ACT, NSW, NT, QLD, SA, TAS, VIC or WA.")
+    CheckHolidayState(state)
     date := ParseStrictDate(text)
-    weekday := FormatTime(CalendarDate(date.Year, date.Month, date.Day, "File"), "WDay")
-    return AustralianDateOf(DateFromDays(date, weekday = 6 ? 3 : weekday = 7 ? 2 : 1))
+    holidays := HolidayStates()
+    Loop {
+        stamp := CalendarDate(date.Year, date.Month, date.Day, "File")
+        if stamp < 20260701 || stamp > 20270630
+            throw ValueError("Public holidays are listed for 01/07/2026 to 30/06/2027 only. Check " AustralianDateOf(date) " against the official list.")
+        weekday := FormatTime(stamp, "WDay")
+        holiday := holidays.Has(stamp) && (state = "ATO" || InStr(" " holidays[stamp] " ", " " state " "))
+        if weekday != 1 && weekday != 7 && !holiday
+            return AustralianDateOf(date)
+        date := DateFromDays(date, 1)
+    }
 }
 
 ; Days past the due date at the as-at date, in 30-day steps.
