@@ -121,12 +121,17 @@ class CommandPicker {
         this.CopyButton.Enabled := false
         if this.SelectedId = ""
             return
+        context := {Year: this.Settings.Year, Quarter: this.Settings.Quarter, HolidayState: this.Settings.HolidayState, Timestamp: A_Now}
         if this.Selected.Input && this.Input.Value = "" {
-            this.Status.Text := "Input required. Type text here or choose Load clipboard and preview."
+            if this.Selected.HasOwnProp("Fields") && this.Selected.Fields.Length {
+                ; Shows the draft with [label] placeholders; Copy stays off until every field is answered.
+                try this.Preview.Value := this.Selected.Produce.Call(context, "")
+                this.Status.Text := "Type one answer per line, in this order: " JoinLines(this.Selected.Fields, ", ") "."
+            } else
+                this.Status.Text := "Input required. Type text here or choose Load clipboard and preview."
             return
         }
         try {
-            context := {Year: this.Settings.Year, Quarter: this.Settings.Quarter, HolidayState: this.Settings.HolidayState, Timestamp: A_Now}
             output := ProduceCommand(this.Selected, context, this.Input.Value)
             this.Output := output
             this.Preview.Value := output

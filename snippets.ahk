@@ -18,9 +18,47 @@ SnippetTokens(context) {
     )
 }
 
-ExpandSnippet(body, context) {
+; Prompted fields: each distinct {{ASK:label}}, in order of first appearance. Labels are case sensitive.
+SnippetFields(body) {
+    fields := []
+    seen := Map()
+    position := 1
+    while found := RegExMatch(body, "\{\{ASK:([^{}]*)\}\}", &field, position) {
+        if !RegExMatch(field[1], "^[A-Za-z0-9][A-Za-z0-9 _-]{0,39}\z")
+            throw ValueError("Field labels must start with an ASCII letter or digit and use at most 40 ASCII letters, digits, spaces, underscores or hyphens.")
+        if !seen.Has(field[1]) {
+            seen[field[1]] := true
+            fields.Push(field[1])
+            if fields.Length > 10
+                throw ValueError("A snippet may ask for at most 10 fields.")
+        }
+        position := found + field.Len
+    }
+    return fields
+}
+
+; answers holds one line per field, in SnippetFields order. Without answers, each field shows as [label].
+; Answers are inserted once, so a token typed in an answer stays text.
+ExpandSnippet(body, context, answers := "") {
     CheckedText(body, 16384)
     tokens := SnippetTokens(context)
+    fields := SnippetFields(body)
+    if answers = "" {
+        for label in fields
+            tokens["ASK:" label] := "[" label "]"
+    } else {
+        if fields.Length = 0
+            throw ValueError("This snippet has no fields to answer.")
+        lines := StrSplit(RTrim(NormaliseLineEndings(answers), "`n"), "`n")
+        if lines.Length != fields.Length
+            throw ValueError("Type " fields.Length " answers, one per line: " JoinLines(fields, ", ") ".")
+        for label in fields {
+            answer := Trim(lines[A_Index], " `t")
+            if answer = "" || StrLen(answer) > 200
+                throw ValueError("Answer " label " in 1 to 200 characters.")
+            tokens["ASK:" label] := answer
+        }
+    }
     result := ""
     position := 1
     count := 0

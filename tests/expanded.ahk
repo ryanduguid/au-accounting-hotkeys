@@ -11,6 +11,7 @@ TestExpanded() {
     TestWorkpaperArithmetic()
     TestCatalogue()
     TestSnippetSearch()
+    TestSnippetFields()
     TestSnippetLoading()
     TestSnippetLabelsAndRecovery()
     TestSnippetLimits()
@@ -181,6 +182,60 @@ TestSnippetSearch() {
         palette.RefreshList()
         AssertEqual(palette.CopyResult(), false, "Missing body search cannot copy a stale result")
         AssertEqual(fake.Writes, 1, "Missing body search does not write")
+    } finally palette.Close()
+}
+
+TestSnippetFields() {
+    context := {Year: 2026, Quarter: 4, Timestamp: "20240229000000"}
+    body := "To {{ASK:Client name}}: records for {{FY_LABEL}} by {{ASK:Due}}. Regards to {{ASK:Client name}}."
+    placeholders := "To [Client name]: records for 2025-26 by [Due]. Regards to [Client name]."
+    completed := "To Example Pty Ltd: records for 2025-26 by 30/09/2026. Regards to Example Pty Ltd."
+    fields := SnippetFields(body)
+    AssertEqual(fields.Length, 2, "Repeated field label asks once")
+    AssertEqual(fields[1] "|" fields[2], "Client name|Due", "Fields keep first-appearance order")
+    AssertEqual(ExpandSnippet(body, context), placeholders, "Unanswered fields expand to placeholders")
+    AssertEqual(ExpandSnippet(body, context, " Example Pty Ltd `r`n30/09/2026`n"), completed, "Answers fill every use of a field")
+    AssertEqual(ExpandSnippet("{{ASK:Note}}", context, "{{FY_END}} %A_Clipboard%"), "{{FY_END}} %A_Clipboard%", "Answers are inserted once, as text")
+    AssertEqual(ExpandSnippet("{{ASK:Note}}", context, RepeatText("a", 200)), RepeatText("a", 200), "200-character answer allowed")
+    AssertValueError(() => ExpandSnippet("{{ASK:Note}}", context, RepeatText("a", 201)), "201-character answer refused")
+    AssertValueError(() => ExpandSnippet(body, context, "Example Pty Ltd"), "Missing answer refused")
+    AssertValueError(() => ExpandSnippet(body, context, "A`nB`nC"), "Extra answer refused")
+    AssertValueError(() => ExpandSnippet(body, context, "A`n `n"), "Blank answer refused")
+    AssertValueError(() => ExpandSnippet("No fields", context, "x"), "Answers for a snippet without fields refused")
+    ten := ""
+    Loop 10
+        ten .= "{{ASK:F" A_Index "}}"
+    AssertEqual(SnippetFields(ten).Length, 10, "Ten fields allowed")
+    AssertValueError(() => SnippetFields(ten "{{ASK:F11}}"), "Eleventh field refused")
+    AssertEqual(SnippetFields("{{ASK:" RepeatText("a", 40) "}}").Length, 1, "40-character label allowed")
+    for badField in ["{{ASK:}}", "{{ASK: Lead}}", "{{ASK:" RepeatText("a", 41) "}}", "{{ASK:Client:name}}", "{{ask:Client}}"]
+        AssertValueError(ExpandSnippet.Bind(badField, context), "Bad field rejected: " badField)
+
+    command := SnippetCommand({Name: "field-note", Body: body})
+    AssertEqual(command.Input, true, "Snippet with fields takes input")
+    AssertEqual(command.MaxInput, 404, "Answer input bounded by field count")
+    AssertEqual(SnippetCommand({Name: "plain", Body: "Plain"}).Input, false, "Snippet without fields takes no input")
+    catalogue := BuiltinCommands()
+    catalogue.Push(command)
+    catalogue.Push(SnippetCommand({Name: "field-formula", Body: "{{ASK:Amount}}"}))
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake, catalogue)
+    try {
+        ChooseCommand(palette, "Snippet:field-note")
+        AssertEqual(palette.Preview.Value, placeholders, "Picker previews fields as placeholders")
+        AssertEqual(palette.Status.Text, "Type one answer per line, in this order: Client name, Due.", "Picker lists the fields")
+        AssertEqual(palette.CopyResult(), false, "Unanswered fields cannot be copied")
+        ChangeTestInput(palette, "Example Pty Ltd`n30/09/2026")
+        AssertEqual(palette.Preview.Value, completed, "Picker previews the completed text")
+        AssertEqual(palette.CopyResult(), true, "Completed snippet copies")
+        AssertEqual(fake.Output, completed, "Copy uses the completed preview")
+        AssertEqual(fake.Reads, 0, "Typed answers do not read the clipboard")
+        ChooseCommand(palette, "Snippet:field-formula")
+        ChangeTestInput(palette, "=1+1")
+        AssertEqual(palette.Output, "=1+1", "Formula-like answer previewed")
+        AssertEqual(palette.CopyResult(), false, "Denied formula answer is not copied")
+        AssertEqual(fake.Confirms, 1, "Formula-like answer asks for confirmation")
+        AssertEqual(fake.Writes, 1, "Denied formula answer writes nothing to the clipboard")
     } finally palette.Close()
 }
 

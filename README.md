@@ -139,6 +139,8 @@ The picker takes a fresh snapshot when it opens. It loads only top-level text fi
 
 Supported date tokens are `{{TODAY_AU}}`, `{{TODAY_ISO}}`, `{{FILE_DATE}}`, `{{FY_START}}`, `{{FY_END}}`, `{{FY_LABEL}}`, `{{FY_RANGE}}`, `{{Q_START}}`, `{{Q_END}}`, `{{Q_RANGE}}` and `{{Q_NUMBER}}`. Token names are case sensitive. Unknown or incomplete tokens are errors; replacement happens once. AutoHotkey-looking text stays text.
 
+A field such as `{{ASK:Client name}}` asks for text when you choose the snippet. The picker previews the draft with `[Client name]` in place of each field and lists the fields; type one answer per line, in that order, and the preview shows the completed text to copy. A label used twice asks once. A snippet may ask for up to 10 fields. Labels start with an ASCII letter or digit, have up to 40 ASCII letters, digits, spaces, underscores or hyphens and are case sensitive. Each answer has 1 to 200 characters on one line; spaces and tabs around it are removed, and the rest is inserted once, so a token in an answer stays text.
+
 Each snippet accepts up to 16,384 characters and 100 tokens. A folder containing more than 100 text files is excluded; the library considers at most 100 files across both folders, with at most 262,144 characters of accepted snippet text. General input and output accept up to 32,768 characters; dates and identifiers accept up to 64. These counts use UTF-16 code units. Oversize results are rejected without truncation. See the catalogue for command-specific limits.
 
 Clipboard size is validated after Windows supplies the text. The limit bounds accepted processing and output, but not the clipboard provider's initial allocation or transfer.
