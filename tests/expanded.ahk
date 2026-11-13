@@ -397,17 +397,19 @@ TestWorkpaperArithmetic() {
     ; Dates from the ATO's tables for 1 July 2026 to 30 June 2027. 6 November 2026 is a Friday.
     for business in [
         ["06/11/2026", "ATO", "06/11/2026"], ["07/11/2026", "NSW", "09/11/2026"], ["01/07/2026", "ATO", "01/07/2026"], ["30/06/2027", "ATO", "30/06/2027"],
-        ; National: the day before Christmas stays, since Christmas Eve is a holiday from the evening only; Christmas Day
-        ; runs past the weekend and the Boxing Day substitute; New Year's Eve stays and New Year's Day moves.
-        ["24/12/2026", "ATO", "24/12/2026"], ["25/12/2026", "NSW", "29/12/2026"], ["31/12/2026", "NT", "31/12/2026"], ["01/01/2027", "WA", "04/01/2027"], ["26/03/2027", "TAS", "30/03/2027"],
+        ; Christmas Eve (QLD, NT, SA) and New Year's Eve (NT, SA) are in the ATO's table, so they move under ATO and in
+        ; those States only; Christmas Day runs past the weekend and the Boxing Day substitute; New Year's Day moves.
+        ["24/12/2026", "ATO", "29/12/2026"], ["24/12/2026", "QLD", "29/12/2026"], ["24/12/2026", "NSW", "24/12/2026"], ["25/12/2026", "NSW", "29/12/2026"],
+        ["31/12/2026", "NT", "04/01/2027"], ["31/12/2026", "ATO", "04/01/2027"], ["31/12/2026", "VIC", "31/12/2026"], ["01/01/2027", "WA", "04/01/2027"], ["26/03/2027", "TAS", "30/03/2027"],
         ; Boxing Day 2026 and ANZAC Day 2027 fall on a weekend. Every State has a Boxing Day substitute;
         ; VIC, SA and TAS have no ANZAC Day substitute.
         ["26/12/2026", "ATO", "29/12/2026"], ["26/12/2026", "SA", "29/12/2026"], ["25/04/2027", "NSW", "27/04/2027"], ["25/04/2027", "VIC", "26/04/2027"], ["25/04/2027", "ATO", "27/04/2027"],
         ; State-only holidays count for their State, and for every State under the ATO rule.
-        ["25/09/2026", "VIC", "28/09/2026"], ["25/09/2026", "NSW", "25/09/2026"], ["25/09/2026", "ATO", "28/09/2026"], ["05/10/2026", "QLD", "06/10/2026"], ["05/10/2026", "VIC", "05/10/2026"],
+        ["25/09/2026", "VIC", "28/09/2026"], ["25/09/2026", "NSW", "25/09/2026"], ["25/09/2026", "ATO", "29/09/2026"], ["05/10/2026", "QLD", "06/10/2026"], ["05/10/2026", "VIC", "05/10/2026"],
         ["14/06/2027", "QLD", "14/06/2027"], ["14/06/2027", "SA", "15/06/2027"], ["07/06/2027", "WA", "08/06/2027"], ["03/08/2026", "NT", "04/08/2026"], ["03/08/2026", "ACT", "03/08/2026"],
-        ; Not holidays for the whole of the State, so left out.
-        ["28/09/2026", "WA", "28/09/2026"], ["03/11/2026", "VIC", "03/11/2026"]
+        ; King's Birthday (WA) and Melbourne Cup are in the ATO's table, so they count as the ATO counts them.
+        ["28/09/2026", "WA", "29/09/2026"], ["28/09/2026", "ATO", "29/09/2026"], ["28/09/2026", "NSW", "28/09/2026"],
+        ["03/11/2026", "VIC", "04/11/2026"], ["03/11/2026", "ATO", "04/11/2026"], ["03/11/2026", "TAS", "03/11/2026"]
     ]
         AssertEqual(BusinessDueDate(business[1], business[2]), business[3], "Business due date " business[1] " " business[2])
     for outside in ["30/06/2026", "01/07/2027", "2024-02-28", "31/12/9999"]
