@@ -263,6 +263,9 @@ TestSnippetDateShifts() {
     stateMessage := "Set State under [Holidays] in config.ini to ATO, or to ACT, NSW, NT, QLD, SA, TAS, VIC or WA."
     AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2026, Quarter: 4, HolidayState: "", Timestamp: "20261113000000"}), "Due shift needs a State", stateMessage)
     AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2026, Quarter: 4, Timestamp: "20261113000000"}), "Library context without a State refused", stateMessage)
+    ; New Year's Day 2027 is a Friday holiday everywhere; 30/06/2027 is the holiday table's last date.
+    AssertEqual(ExpandSnippet("{{TODAY_AU+14}} {{DUE_AU+14}}", {Year: 2027, Quarter: 2, HolidayState: "VIC", Timestamp: "20261218000000"}), "01/01/2027 04/01/2027", "Shift across the year end")
+    AssertEqual(ExpandSnippet("{{DUE_AU+14}} {{DUE_AU+18}}", {Year: 2027, Quarter: 4, HolidayState: "ATO", Timestamp: "20270612000000"}), "28/06/2027 30/06/2027", "Due shift up to the table's last date")
     AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2027, Quarter: 4, HolidayState: "VIC", Timestamp: "20270625000000"}), "Due shift past the holiday table refused")
     AssertEqual(ExpandSnippet("{{TODAY_AU+14}}", {Year: 2027, Quarter: 4, HolidayState: "", Timestamp: "20270625000000"}), "09/07/2027", "Calendar shift needs no holiday table")
 
@@ -341,6 +344,29 @@ TestHotstringSnippets() {
     AssertValueError(() => SnippetsFromHotstrings("#Hotstring X`n::a::MsgBox"), "Default options refuse the file", "line 1: #Hotstring changes the default options; set options on each entry instead.")
     AssertEqual(SnippetsFromHotstrings("#Hotstring NoMouse`n::a::b").Items.Length, 1, "NoMouse leaves text unchanged")
 
+    ; AutoHotkey joins a continuation section to the code line above it, past blank and comment lines,
+    ; and ends a /* block only at a line that starts or ends with */.
+    joined := SnippetsFromHotstrings(JoinLines([
+        "::pre::by the", "(", "way", ")",
+        "::gap::", "", "; a comment line", "(", "::ghost::boo", ")",
+        "::two::", "(", "first", ")", "(", "second", ")",
+        'help := "', "(", "::shadow::from a string", ')"',
+        "/* opening */ ::c1::commented", "::c2::commented", "a */ b", "::c3::commented", "*/ ::after::shown",
+        ":T:tok::Due {{TODAY_AU}}",
+        ":S:keep::exempt",
+        "::e::", "(", ")",
+        "::ab``:::ok",
+        ":X0:xz::plain"
+    ]))
+    loadedEntries := ""
+    for item in joined.Items
+        loadedEntries .= item.Name "=" item.Body "|"
+    AssertEqual(loadedEntries, "gap=::ghost::boo|after=shown|keep=exempt|ab:=ok|xz=plain|", "Sections, comment blocks, escaped colons and X0 read as AutoHotkey reads them")
+    AssertEqual(JoinLines(joined.Errors), JoinLines(["line 1, pre: Text before a continuation section is not supported."
+        , "line 11, two: More than one continuation section is not supported."
+        , "line 27, tok: Uses {{ or }}, which the picker would read as a snippet token."
+        , "line 29, e: Runs code instead of typing text."]), "Entries the picker cannot show as typed are refused")
+
     base := A_Temp "\au-hotkeys-hotstrings-" ProcessExist()
     for folder in ["one", "many", "lots", "misc"]
         DirCreate(base "\" folder)
@@ -377,7 +403,7 @@ TestHotstringSnippets() {
 
         FileAppend("; no entries", base "\misc\Empty.ahk", "UTF-8-RAW")
         FileAppend("#Hotstring X`n::a::MsgBox", base "\misc\Defaults.ahk", "UTF-8-RAW")
-        FileAppend("; " RepeatText("a", 20000) "`n::big::text", base "\misc\Large.ahk", "UTF-8-RAW")
+        FileAppend("; " RepeatText("a", 40000) "`n::big::text", base "\misc\Large.ahk", "UTF-8-RAW")
         misc := LoadSnippets([base "\misc"], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
         AssertEqual(misc.Items.Length, 1, "An .ahk file above the text-file character limit loads")
         AssertEqual(misc.Items[1].Name, "big", "Large file entry loaded")
