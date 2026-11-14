@@ -23,9 +23,18 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 ## Start
 
 1. Install [AutoHotkey v2](https://www.autohotkey.com/) on Windows, or run `winget install --id AutoHotkey.AutoHotkey --exact` in a terminal.
-2. Download this repository using **Code**, then **Download ZIP**, and extract it.
-3. Double-click `accounting-hotkeys.ahk`.
+2. From the [latest release](https://github.com/ryanduguid/au-accounting-hotkeys/releases/latest), download `au-accounting-hotkeys-v1.0.0.zip` and `SHA256SUMS` into one folder. In PowerShell in that folder, check that the 2 hashes shown match, then extract the zip:
+
+   ```powershell
+   (Get-FileHash .\au-accounting-hotkeys-v1.0.0.zip -Algorithm SHA256).Hash.ToLower()
+   Get-Content .\SHA256SUMS
+   Expand-Archive .\au-accounting-hotkeys-v1.0.0.zip -DestinationPath .
+   ```
+
+3. Double-click `accounting-hotkeys.ahk` in the extracted `au-accounting-hotkeys` folder.
 4. Open a blank text document and press **Insert**. It types `30/06/2026`.
+
+The release is the checked route. [Verify a download](docs/security.md#verify-a-download) also checks its signed provenance. Three features described below are on `main` but not in v1.0.0: shifted dates `{{TODAY_AU+N}}` and `{{DUE_AU+N}}`, choice fields `{{PICK:label|choice|choice}}`, and hotstrings read from an `.ahk` file in `snippets.local`. To use them before the next release, download `main` instead with **Code**, then **Download ZIP**; that download has no published checksum. [CHANGELOG.md](CHANGELOG.md) lists what is unreleased.
 
 The first run copies `config.example.ini` to `config.ini`. The default shortcuts work in all applications whilst the script runs, and Insert replaces the key's usual action. Check the selected year and quarter before using them in a workpaper.
 
