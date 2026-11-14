@@ -10,6 +10,10 @@ All notable changes to this repository are recorded here. The format follows [Ke
 - Existing AutoHotkey hotstrings in the picker: an `.ahk` file in `snippets.local` is read, never run, and each entry that types literal text becomes a snippet labelled with its abbreviation. Entries that run code or use key syntax are listed by line and not loaded. The library loads at most 1,000 snippets.
 - Choice fields in snippets: `{{PICK:label|choice|choice}}` offers 2 to 10 choices, previews them and accepts only an answer that matches one exactly.
 
+### Changed
+
+- The README's Start steps download the latest release zip and check it against `SHA256SUMS`; Download ZIP of `main` is the route for unreleased features. A check fails when the README names a release zip other than the version in `CITATION.cff`.
+
 ## [1.0.0] - 2026-11-14
 
 The first release. This section lists everything on `main` from the first commit on 6 October 2026.
