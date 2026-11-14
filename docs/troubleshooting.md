@@ -32,6 +32,8 @@ Clipboard size is validated after Windows supplies the text. The limit bounds ac
 
 Use a top-level UTF-8 `.txt` file in `snippets.local`. The label must start with an ASCII letter or digit and contain at most 80 characters. Remaining characters may be ASCII letters, digits, spaces, underscores or hyphens. Labels are compared case-insensitively across both folders. Reopen the picker after editing it. Nested files, Windows reparse points, invalid UTF-8, malformed tokens and exceeded limits are excluded. NTFS hard links are not detected. The picker lists loading errors.
 
+A hotstring from an `.ahk` file loads only when it types literal text: add the `T` option to one that uses `!`, `^`, `+`, `#` or braces as text, and see [Customise snippets](../README.md#customise-snippets) for what else is refused. The picker lists each refused entry by line, at most 10 for each file.
+
 ## Excel changes the pasted result
 
 Dates and identifiers can be interpreted according to cell format and Excel settings. Pre-format destination cells as Text when you need exact text, including leading zeros. Review the formula bar as well as the displayed cell. Formula-like output requires confirmation before copying, but this does not establish safe interpretation in Excel.

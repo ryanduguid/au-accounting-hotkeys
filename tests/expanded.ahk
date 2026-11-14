@@ -15,6 +15,7 @@ TestExpanded() {
     TestSnippetDateShifts()
     TestSnippetLoading()
     TestSnippetLabelsAndRecovery()
+    TestHotstringSnippets()
     TestSnippetLimits()
     TestPickerState()
     TestPickerHolidayState()
@@ -275,6 +276,113 @@ TestSnippetDateShifts() {
         for problem in withState.Errors
             AssertEqual(InStr(problem, stateMessage), 0, "Catalogue passes the [Holidays] State to snippets")
     } finally DirDelete(directory, true)
+}
+
+TestHotstringSnippets() {
+    source := JoinLines([
+        "; Fabricated entries for the snippet loader",
+        '^!d::SendText("x")',
+        "::btw::by the way   `; trailing comment",
+        ":T:ty::Thanks!",
+        "::ty2::Thanks!",
+        ":*?C1 B0:addr::12 Example St``nNewcastle NSW",
+        ":R:raw::50% {off} a ``; b `; comment",
+        ":*:;sig::",
+        "(",
+        "`tRegards,",
+        "`tExample``tPerson",
+        "`t  indented",
+        ")",
+        "::code1::",
+        "{",
+        '    MsgBox("x")',
+        "}",
+        ":X:mb::MsgBox",
+        ":Q:bad::x",
+        "/*",
+        "::hidden::text",
+        "*/",
+        "::a b::text",
+        "::esc``x::text",
+        "::joined::",
+        "( Join``s",
+        "::inner::should not load",
+        ")",
+        ":T0:brace::",
+        "(",
+        "Line one{Enter}",
+        ")",
+        "#Hotstring EndChars -()",
+        '#HotIf WinActive("ahk_exe EXCEL.EXE")',
+        "::open::",
+        "(",
+        "never closed"
+    ])
+    parsed := SnippetsFromHotstrings(source)
+    expected := [["btw", "by the way"], ["ty", "Thanks!"], ["addr", "12 Example St`nNewcastle NSW"], ["raw", "50% {off} a `; b"], [";sig", "Regards,`nExample`tPerson`n  indented"]]
+    AssertEqual(parsed.Items.Length, expected.Length, "Only literal-text entries load")
+    for index, vector in expected {
+        AssertEqual(parsed.Items[index].Name, vector[1], "Abbreviation becomes the label: " vector[1])
+        AssertEqual(parsed.Items[index].Body, vector[2], "Replacement text read as AutoHotkey types it: " vector[1])
+    }
+    problems := ["line 5, ty2: Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text."
+        , "line 14, code1: Runs code instead of typing text."
+        , "line 18, mb: Runs code instead of typing text."
+        , "line 19, bad: Unknown option in :Q:."
+        , "line 23, a b: The abbreviation becomes the label, so it must be 1 to 40 ASCII letters, digits or symbols, without spaces."
+        , "line 24, esc``x: Unsupported escape sequence ``x."
+        , "line 25, joined: Continuation options and text after the closing parenthesis are not supported."
+        , "line 29, brace: Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text."
+        , "line 35, open: The continuation section has no closing parenthesis."]
+    AssertEqual(parsed.Errors.Length, problems.Length, "Every refused entry reported")
+    for index, problem in problems
+        AssertEqual(parsed.Errors[index], problem, "Refusal reported by line " index)
+    AssertValueError(() => SnippetsFromHotstrings("#Hotstring X`n::a::MsgBox"), "Default options refuse the file", "line 1: #Hotstring changes the default options; set options on each entry instead.")
+    AssertEqual(SnippetsFromHotstrings("#Hotstring NoMouse`n::a::b").Items.Length, 1, "NoMouse leaves text unchanged")
+
+    base := A_Temp "\au-hotkeys-hotstrings-" ProcessExist()
+    for folder in ["one", "many", "lots", "misc"]
+        DirCreate(base "\" folder)
+    try {
+        FileAppend("Text file wins", base "\one\btw.txt", "UTF-8-RAW")
+        FileAppend(source, base "\one\Quick.ahk", "UTF-8")
+        loaded := LoadSnippets([base "\one"], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
+        AssertEqual(loaded.Items.Length, 5, "Text file and hotstrings load together")
+        AssertEqual(loaded.Items[1].Body, "Text file wins", "First label in sorted order kept")
+        AssertEqual(loaded.Errors.Length, 10, "Refusals and the duplicate reported")
+        AssertEqual(loaded.Errors[1], "Quick.ahk: " problems[1], "File named in each refusal")
+        AssertEqual(loaded.Errors[10], "Quick.ahk: line 3, btw: Duplicate snippet label.", "Duplicate label across file types refused")
+        catalogue := BuiltinCommands()
+        for item in loaded.Items
+            catalogue.Push(SnippetCommand(item))
+        AssertEqual(FilterCommands(catalogue, ";sig").Length, 1, "Picker search finds an abbreviation")
+
+        bad := ""
+        Loop 12
+            bad .= ":Q:q" A_Index "::x`n"
+        FileAppend(bad, base "\many\Many.ahk", "UTF-8-RAW")
+        many := LoadSnippets([base "\many"], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
+        AssertEqual(many.Errors.Length, 11, "At most 10 problems listed for a file")
+        AssertEqual(many.Errors[11], "Many.ahk: 2 more entries were not loaded.", "Unlisted problems counted")
+
+        lots := ""
+        Loop 1001
+            lots .= "::a" A_Index "::x`n"
+        FileAppend(lots, base "\lots\Lots.ahk", "UTF-8-RAW")
+        capped := LoadSnippets([base "\lots"], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
+        AssertEqual(capped.Items.Length, 1000, "At most 1,000 snippets load")
+        AssertEqual(capped.Errors.Length, 1, "Snippet cap reported once")
+        AssertEqual(capped.Errors[1], "Only the first 1,000 snippets are loaded.", "Snippet cap message")
+
+        FileAppend("; no entries", base "\misc\Empty.ahk", "UTF-8-RAW")
+        FileAppend("#Hotstring X`n::a::MsgBox", base "\misc\Defaults.ahk", "UTF-8-RAW")
+        FileAppend("; " RepeatText("a", 20000) "`n::big::text", base "\misc\Large.ahk", "UTF-8-RAW")
+        misc := LoadSnippets([base "\misc"], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
+        AssertEqual(misc.Items.Length, 1, "An .ahk file above the text-file character limit loads")
+        AssertEqual(misc.Items[1].Name, "big", "Large file entry loaded")
+        AssertEqual(misc.Errors[1], "Defaults.ahk: line 1: #Hotstring changes the default options; set options on each entry instead.", "File-level refusal reported")
+        AssertEqual(misc.Errors[2], "Empty.ahk: No hotstrings found.", "File without entries reported")
+    } finally DirDelete(base, true)
 }
 
 TestSnippetLimits() {
@@ -561,7 +669,7 @@ TestSnippetLoading() {
     DirCreate(directory)
     DirCreate(directory "\nested")
     DirCreate(directory "\other")
-    paths := [directory "\alpha.txt", directory "\zeta.txt", directory "\bad.txt", directory "\binary.txt", directory "\nul.txt", directory "\ignore.ahk", directory "\nested\hidden.txt", directory "\other\ALPHA.txt"]
+    paths := [directory "\alpha.txt", directory "\zeta.txt", directory "\bad.txt", directory "\binary.txt", directory "\nul.txt", directory "\ignore.ini", directory "\nested\hidden.txt", directory "\other\ALPHA.txt"]
     try {
         FileAppend("Unicode " Chr(0xE9) " {{FY_END}}", paths[1], "UTF-8")
         FileAppend("second", paths[2], "UTF-8-RAW")

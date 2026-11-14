@@ -7,6 +7,7 @@ All notable changes to this repository are recorded here. The format follows [Ke
 ### Added
 
 - Shifted dates in snippets: `{{TODAY_AU+N}}` is N calendar days after today, and `{{DUE_AU+N}}` moves that date off a weekend or public holiday for the `[Holidays] State`, as `BusinessDueDate` does. N is 1 to 999.
+- Existing AutoHotkey hotstrings in the picker: an `.ahk` file in `snippets.local` is read, never run, and each entry that types literal text becomes a snippet labelled with its abbreviation. Entries that run code or use key syntax are listed by line and not loaded. The library loads at most 1,000 snippets.
 
 ## [1.0.0] - 2026-11-14
 

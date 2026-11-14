@@ -94,7 +94,7 @@ CheckTokenDelimiters(text) {
         throw ValueError("Snippet contains an incomplete token.")
 }
 
-ReadUtf8Snippet(path) {
+ReadUtf8Snippet(path, maximum := 16384) {
     handle := FileOpen(path, "r")
     if !IsObject(handle)
         throw ValueError("Snippet could not be opened for reading.")
@@ -121,7 +121,119 @@ ReadUtf8Snippet(path) {
         if NumGet(wide, (A_Index - 1) * 2, "UShort") = 0
             throw ValueError("Snippet contains a NUL character.")
     }
-    return CheckedText(body, 16384)
+    return CheckedText(body, maximum)
+}
+
+; Reads AutoHotkey hotstrings (:options:abbreviation::replacement) as snippets without running
+; anything. Only replacements that type literal text load; every other entry is reported by line.
+SnippetsFromHotstrings(source) {
+    result := {Items: [], Errors: []}
+    lines := StrSplit(NormaliseLineEndings(source), "`n")
+    index := 0
+    inComment := false
+    while index < lines.Length {
+        index += 1
+        line := lines[index]
+        if inComment || RegExMatch(line, "^[ `t]*/\*") {
+            inComment := !InStr(line, "*/")
+            continue
+        }
+        ; A directive that sets default options changes every entry below it, as X would.
+        if RegExMatch(line, "^[ `t]*#(\w+)[ `t]*(\S*)", &directive) && directive[1] = "Hotstring" && !RegExMatch(directive[2], "i)^(EndChars|NoMouse)\z")
+            throw ValueError("line " index ": #" directive[1] " changes the default options; set options on each entry instead.")
+        if !RegExMatch(line, "^[ `t]*:([^:]*):(.+?)::(.*)\z", &entry)
+            continue
+        start := index
+        try {
+            mode := ""
+            options := entry[1]
+            while options != "" {
+                if !RegExMatch(options, "i)^(?:[ `t]+|\*0?|\?0?|B0?|C[01]?|K-?[0-9]+|O0?|P[0-9]+|S[IPE]|Z0?|(T0?|R0?|X))", &option)
+                    throw ValueError("Unknown option in :" entry[1] ":.")
+                if option[1] = "X"
+                    throw ValueError("Runs code instead of typing text.")
+                if option[1] != ""
+                    mode := SubStr(option[1], 2) = "0" ? "send" : "text"
+                options := SubStr(options, option.Len + 1)
+            }
+            name := AhkUnescape(entry[2])
+            if !RegExMatch(name, "^[!-~]{1,40}\z")
+                throw ValueError("The abbreviation becomes the label, so it must be 1 to 40 ASCII letters, digits or symbols, without spaces.")
+            text := WithoutComment(entry[3])
+            if text = "" {
+                if index = lines.Length || !RegExMatch(lines[index + 1], "^[ `t]*\((.*)\z", &opening)
+                    throw ValueError("Runs code instead of typing text.")
+                index += 1
+                section := []
+                closing := ""
+                while index < lines.Length {
+                    index += 1
+                    if RegExMatch(lines[index], "^[ `t]*\)(.*)\z", &closing)
+                        break
+                    section.Push(lines[index])
+                }
+                if !IsObject(closing)
+                    throw ValueError("The continuation section has no closing parenthesis.")
+                if WithoutComment(opening[1]) != "" || WithoutComment(closing[1]) != ""
+                    throw ValueError("Continuation options and text after the closing parenthesis are not supported.")
+                text := ContinuationText(section)
+                ; A continuation section types as text unless an option says otherwise.
+                mode := mode = "" ? "text" : mode
+            }
+            text := AhkUnescape(text)
+            if mode != "text" && RegExMatch(text, "[{}^!+#]")
+                throw ValueError("Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text.")
+            result.Items.Push({Name: name, Body: text, Line: start})
+        } catch ValueError as problem {
+            result.Errors.Push("line " start ", " entry[2] ": " problem.Message)
+        }
+    }
+    return result
+}
+
+; A semicolon with a space or tab to its left starts a comment; trailing spaces and tabs are dropped.
+WithoutComment(text) {
+    return RTrim(RegExReplace(text, "[ `t]+;.*"), " `t")
+}
+
+; Joins continuation lines as AutoHotkey does by default: the first line's leading spaces or tabs
+; are removed from each line that starts with them, and trailing spaces and tabs are removed.
+ContinuationText(section) {
+    indent := section.Length && RegExMatch(section[1], "^( +|`t+)", &lead) ? lead[1] : ""
+    text := ""
+    for line in section {
+        if indent != "" && SubStr(line, 1, StrLen(indent)) == indent
+            line := SubStr(line, StrLen(indent) + 1)
+        text .= (A_Index = 1 ? "" : "`n") RTrim(line, " `t")
+    }
+    return text
+}
+
+AhkUnescape(text) {
+    static sequences := Map("``", "``", ";", ";", ":", ":", "{", "{", "n", "`n", "r", "`r", "t", "`t", "s", " ", '"', '"', "'", "'")
+    result := ""
+    position := 1
+    while found := RegExMatch(text, "``(.?)", &escape, position) {
+        if !sequences.Has(escape[1])
+            throw ValueError("Unsupported escape sequence ``" escape[1] ".")
+        result .= SubStr(text, position, found - position) sequences[escape[1]]
+        position := found + escape.Len
+    }
+    return result SubStr(text, position)
+}
+
+; A .txt file is one snippet named after the file; an .ahk file holds hotstrings.
+SnippetFileEntries(path, name, extension) {
+    if extension != "ahk" && !RegExMatch(name, "^[A-Za-z0-9][A-Za-z0-9 _-]{0,79}\z")
+        throw ValueError("Snippet labels must start with an ASCII letter or digit, use only ASCII letters, digits, spaces, underscores or hyphens, and contain at most 80 characters.")
+    if InStr(FileGetAttrib(path), "L")
+        throw ValueError("Linked snippet files are not loaded.")
+    if extension != "ahk"
+        return {Items: [{Name: name, Body: ReadUtf8Snippet(path)}], Errors: []}
+    loaded := SnippetsFromHotstrings(ReadUtf8Snippet(path, 65536))
+    if loaded.Items.Length = 0 && loaded.Errors.Length = 0
+        throw ValueError("No hotstrings found.")
+    return loaded
 }
 
 LoadSnippets(directories, context) {
@@ -139,14 +251,16 @@ LoadSnippets(directories, context) {
         }
         paths := ""
         directoryCount := 0
-        Loop Files directory "\*.txt", "F" {
-            directoryCount += 1
-            if directoryCount > 100
-                break
-            paths .= A_LoopFileFullPath "`n"
+        for pattern in ["*.txt", "*.ahk"] {
+            Loop Files directory "\" pattern, "F" {
+                directoryCount += 1
+                if directoryCount > 100
+                    break
+                paths .= A_LoopFileFullPath "`n"
+            }
         }
         if directoryCount > 100 {
-            result.Errors.Push("A snippet directory exceeds 100 text files and was excluded.")
+            result.Errors.Push("A snippet directory exceeds 100 snippet files and was excluded.")
             continue
         }
         for path in StrSplit(RTrim(Sort(paths), "`r`n"), "`n", "`r") {
@@ -157,23 +271,44 @@ LoadSnippets(directories, context) {
                 result.Errors.Push("Only the first 100 snippet files are considered.")
                 return result
             }
-            SplitPath(path, , , , &name)
-            try {
-                if !RegExMatch(name, "^[A-Za-z0-9][A-Za-z0-9 _-]{0,79}\z")
-                    throw ValueError("Snippet labels must start with an ASCII letter or digit, use only ASCII letters, digits, spaces, underscores or hyphens, and contain at most 80 characters.")
-                if names.Has(name)
-                    throw ValueError("Duplicate snippet label.")
-                if InStr(FileGetAttrib(path), "L")
-                    throw ValueError("Linked snippet files are not loaded.")
-                body := ReadUtf8Snippet(path)
-                ExpandSnippet(body, context)
-                if total + StrLen(body) > 262144
-                    throw ValueError("Total snippet text exceeds 262,144 characters.")
-                total += StrLen(body)
-                names[name] := true
-                result.Items.Push({Name: name, Body: body})
-            } catch Error as problem {
-                result.Errors.Push(name ": " problem.Message)
+            SplitPath(path, , , &extension, &name)
+            source := extension = "ahk" ? name ".ahk" : name
+            try loaded := SnippetFileEntries(path, name, extension)
+            catch Error as problem {
+                result.Errors.Push(source ": " problem.Message)
+                continue
+            }
+            problems := loaded.Errors
+            capped := false
+            for entry in loaded.Items {
+                if result.Items.Length = 1000 {
+                    capped := true
+                    break
+                }
+                try {
+                    if names.Has(entry.Name)
+                        throw ValueError("Duplicate snippet label.")
+                    ExpandSnippet(entry.Body, context)
+                    if total + StrLen(entry.Body) > 262144
+                        throw ValueError("Total snippet text exceeds 262,144 characters.")
+                    total += StrLen(entry.Body)
+                    names[entry.Name] := true
+                    result.Items.Push({Name: entry.Name, Body: entry.Body})
+                } catch Error as problem {
+                    problems.Push((entry.HasOwnProp("Line") ? "line " entry.Line ", " entry.Name ": " : "") problem.Message)
+                }
+            }
+            ; One .ahk file can hold hundreds of entries, so each file lists at most 10 problems.
+            for problem in problems {
+                if A_Index > 10 {
+                    result.Errors.Push(source ": " (problems.Length - 10) " more entries were not loaded.")
+                    break
+                }
+                result.Errors.Push(source ": " problem)
+            }
+            if capped {
+                result.Errors.Push("Only the first 1,000 snippets are loaded.")
+                return result
             }
         }
     }
