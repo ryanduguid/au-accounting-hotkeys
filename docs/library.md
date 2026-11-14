@@ -57,7 +57,7 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 
 ## Snippet API
 
-`ExpandSnippet(body, context, answers := "")` expands the documented token whitelist once. Context contains the selected ending `Year`, fiscal `Quarter` and explicit `Timestamp`, and `HolidayState` for `{{DUE_AU+N}}`; without it, that token throws `ValueError`. `answers` holds one line for each field `SnippetFields(body)` returns, in that order; without answers, each field expands to `[label]`. It returns text or throws `ValueError`. Unknown and malformed tokens fail; AutoHotkey source, environment references and key syntax remain literal text.
+`ExpandSnippet(body, context, answers := "")` expands the documented token whitelist once. Context contains the selected ending `Year`, fiscal `Quarter` and explicit `Timestamp`, and `HolidayState` for `{{DUE_AU+N}}`; without it, that token throws `ValueError`. `answers` holds one line for each field `SnippetFields(body)` returns, in that order; without answers, each field expands to `[label]`, or `[label: choice / choice]` for a `{{PICK:label|choice|choice}}` field, whose answer must equal one of its choices. It returns text or throws `ValueError`. Unknown and malformed tokens fail; AutoHotkey source, environment references and key syntax remain literal text.
 
 `LoadSnippets(directories, context)` returns `{Items, Errors}`. Each item contains `Name` and `Body`; errors describe excluded files and entries. Production calls it with the two fixed snippet folders. It reads top-level UTF-8 `.txt` and `.ahk` files, snapshots their contents and enforces the limits in the README. It does not write files or watch folders.
 

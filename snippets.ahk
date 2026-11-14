@@ -18,45 +18,88 @@ SnippetTokens(context) {
     )
 }
 
-; Prompted fields: each distinct {{ASK:label}}, in order of first appearance. Labels are case sensitive.
+; Prompted fields: each distinct {{ASK:label}} or {{PICK:label|choice|choice}}, in order of first
+; appearance. Labels are case sensitive.
 SnippetFields(body) {
-    fields := []
-    seen := Map()
+    return ReadSnippetFields(body).Labels
+}
+
+; Labels in order, the token text of each and, for a choice field, its choices. A label used again
+; must repeat its token exactly, so one answer fills every use.
+ReadSnippetFields(body) {
+    fields := {Labels: [], Tokens: Map(), Choices: Map()}
     position := 1
-    while found := RegExMatch(body, "\{\{ASK:([^{}]*)\}\}", &field, position) {
-        if !RegExMatch(field[1], "^[A-Za-z0-9][A-Za-z0-9 _-]{0,39}\z")
-            throw ValueError("Field labels must start with an ASCII letter or digit and use at most 40 ASCII letters, digits, spaces, underscores or hyphens.")
-        if !seen.Has(field[1]) {
-            seen[field[1]] := true
-            fields.Push(field[1])
-            if fields.Length > 10
-                throw ValueError("A snippet may ask for at most 10 fields.")
-        }
+    while found := RegExMatch(body, "\{\{(ASK|PICK):([^{}]*)\}\}", &field, position) {
         position := found + field.Len
+        token := field[1] ":" field[2]
+        choices := StrSplit(field[2], "|")
+        label := field[1] = "ASK" ? field[2] : choices.RemoveAt(1)
+        if !RegExMatch(label, "^[A-Za-z0-9][A-Za-z0-9 _-]{0,39}\z")
+            throw ValueError("Field labels must start with an ASCII letter or digit and use at most 40 ASCII letters, digits, spaces, underscores or hyphens.")
+        if fields.Tokens.Has(label) {
+            if fields.Tokens[label] !== token
+                throw ValueError("Field " label " is used with different choices; repeat the same token.")
+            continue
+        }
+        if field[1] = "ASK"
+            choices := ""
+        else
+            CheckChoices(label, choices)
+        fields.Labels.Push(label)
+        fields.Tokens[label] := token
+        fields.Choices[label] := choices
+        if fields.Labels.Length > 10
+            throw ValueError("A snippet may ask for at most 10 fields.")
     }
     return fields
 }
 
-; answers holds one line per field, in SnippetFields order. Without answers, each field shows as [label].
+; The | separator cannot be escaped, so a choice never contains it.
+CheckChoices(label, choices) {
+    if choices.Length < 2 || choices.Length > 10
+        throw ValueError("Choice field " label " needs 2 to 10 choices separated by |.")
+    seen := Map()
+    for choice in choices {
+        if choice = "" || StrLen(choice) > 100 || choice !== Trim(choice, " ") || RegExMatch(choice, "[\x00-\x1F\x7F\x{85}\x{2028}\x{2029}]")
+            throw ValueError("Each choice for " label " needs 1 to 100 characters, no spaces at either end and no control characters.")
+        if seen.Has(choice)
+            throw ValueError("Choice field " label " lists " choice " twice.")
+        seen[choice] := true
+    }
+}
+
+; answers holds one line per field, in SnippetFields order. Without answers, each field shows as
+; [label], or [label: choice / choice] for a choice field. A choice answer must match a choice exactly.
 ; Answers are inserted once, so a token typed in an answer stays text.
 ExpandSnippet(body, context, answers := "") {
     CheckedText(body, 16384)
     tokens := SnippetTokens(context)
-    fields := SnippetFields(body)
+    fields := ReadSnippetFields(body)
+    labels := fields.Labels
     if answers = "" {
-        for label in fields
-            tokens["ASK:" label] := "[" label "]"
+        for label in labels {
+            choices := fields.Choices[label]
+            tokens[fields.Tokens[label]] := "[" label (IsObject(choices) ? ": " JoinLines(choices, " / ") : "") "]"
+        }
     } else {
-        if fields.Length = 0
+        if labels.Length = 0
             throw ValueError("This snippet has no fields to answer.")
         lines := StrSplit(RTrim(NormaliseLineEndings(answers), "`n"), "`n")
-        if lines.Length != fields.Length
-            throw ValueError("Type " fields.Length " answers, one per line: " JoinLines(fields, ", ") ".")
-        for label in fields {
+        if lines.Length != labels.Length
+            throw ValueError("Type " labels.Length " answers, one per line: " JoinLines(labels, ", ") ".")
+        for label in labels {
             answer := Trim(lines[A_Index], " `t")
             if answer = "" || StrLen(answer) > 200
                 throw ValueError("Answer " label " in 1 to 200 characters.")
-            tokens["ASK:" label] := answer
+            choices := fields.Choices[label]
+            if IsObject(choices) {
+                matched := false
+                for choice in choices
+                    matched := matched || choice == answer
+                if !matched
+                    throw ValueError("Answer " label " with one of: " JoinLines(choices, ", ") ".")
+            }
+            tokens[fields.Tokens[label]] := answer
         }
     }
     result := ""
