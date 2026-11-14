@@ -287,8 +287,10 @@ ContinuationText(section) {
     return text
 }
 
+; The escape sequences in https://www.autohotkey.com/docs/v2/misc/EscapeChar.htm (read 15 November
+; 2026). The page does not say what a backtick before any other character types, so that is refused.
 AhkUnescape(text) {
-    static sequences := Map("``", "``", ";", ";", ":", ":", "{", "{", "n", "`n", "r", "`r", "t", "`t", "s", " ", '"', '"', "'", "'")
+    static sequences := Map("``", "``", ";", ";", ":", ":", "{", "{", "n", "`n", "r", "`r", "b", "`b", "t", "`t", "s", " ", "v", "`v", "a", "`a", "f", "`f", '"', '"', "'", "'")
     result := ""
     position := 1
     while found := RegExMatch(text, "``(.?)", &escape, position) {

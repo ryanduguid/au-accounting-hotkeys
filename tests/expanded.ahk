@@ -356,12 +356,18 @@ TestHotstringSnippets() {
         ":S:keep::exempt",
         "::e::", "(", ")",
         "::ab``:::ok",
-        ":X0:xz::plain"
+        ":X0:xz::plain",
+        "::bt````x::a````b",
+        "::tick````::v",
+        "::many::a::b::c",
+        "::x``::y::z",
+        ":T:bell::ding``a"
     ]))
     loadedEntries := ""
     for item in joined.Items
         loadedEntries .= item.Name "=" item.Body "|"
-    AssertEqual(loadedEntries, "gap=::ghost::boo|after=shown|keep=exempt|ab:=ok|xz=plain|", "Sections, comment blocks, escaped colons and X0 read as AutoHotkey reads them")
+    AssertEqual(loadedEntries, "gap=::ghost::boo|after=shown|keep=exempt|ab:=ok|xz=plain|bt``x=a``b|tick``=v|many=a::b::c|x::y=z|bell=ding`a|", "Sections, comment blocks, escapes, colons and X0 read as AutoHotkey reads them")
+    AssertValueError(() => ExpandSnippet(joined.Items[joined.Items.Length].Body, {Year: 2026, Quarter: 4, Timestamp: "20240229000000"}), "A control character from an escape does not reach the picker")
     AssertEqual(JoinLines(joined.Errors), JoinLines(["line 1, pre: Text before a continuation section is not supported."
         , "line 11, two: More than one continuation section is not supported."
         , "line 27, tok: Uses {{ or }}, which the picker would read as a snippet token."
