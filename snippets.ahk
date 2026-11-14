@@ -132,14 +132,15 @@ SnippetsFromHotstrings(source) {
         ; A directive that sets default options changes every entry below it, as X would.
         if RegExMatch(line.Text, "^#(\w+)[ `t]*(\S*)", &directive) && directive[1] = "Hotstring" && !RegExMatch(directive[2], "i)^(EndChars|NoMouse)\z")
             throw ValueError("line " line.Number ": #" directive[1] " changes the default options; set options on each entry instead.")
-        if !RegExMatch(line.Text, "^:([^:]*):(.+?)::(.*)\z", &entry)
+        ; The abbreviation ends at the first double colon that is not escaped.
+        if !RegExMatch(line.Text, "^:([^:]*):((?:[^``:]|``.|:(?!:))+?)::(.*)\z", &entry)
             continue
         start := line.Number
         try {
             mode := ""
             options := entry[1]
             while options != "" {
-                if !RegExMatch(options, "i)^(?:[ `t]+|\*0?|\?0?|B0?|C[01]?|K-?[0-9]+|O0?|P[0-9]+|S[IPE0]?|Z0?|(T0?|R0?|X))", &option)
+                if !RegExMatch(options, "i)^(?:[ `t]+|\*0?|\?0?|B0?|C[01]?|K-?[0-9]+|O0?|P[0-9]+|S[IPE0]?|Z0?|X0|(T0?|R0?|X))", &option)
                     throw ValueError("Unknown option in :" entry[1] ":.")
                 if option[1] = "X"
                     throw ValueError("Runs code instead of typing text.")
@@ -164,7 +165,9 @@ SnippetsFromHotstrings(source) {
                 text := ContinuationText(section.Lines)
                 ; A continuation section types as text unless an option says otherwise.
                 mode := mode = "" ? "text" : mode
-            } else if text = ""
+            }
+            ; Without replacement text, the lines below are the entry's function body.
+            if text = ""
                 throw ValueError("Runs code instead of typing text.")
             text := AhkUnescape(text)
             if mode != "text" && RegExMatch(text, "[{}^!+#]")

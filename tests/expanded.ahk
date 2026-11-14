@@ -352,15 +352,19 @@ TestHotstringSnippets() {
         'help := "', "(", "::shadow::from a string", ')"',
         "/* opening */ ::c1::commented", "::c2::commented", "a */ b", "::c3::commented", "*/ ::after::shown",
         ":T:tok::Due {{TODAY_AU}}",
-        ":S:keep::exempt"
+        ":S:keep::exempt",
+        "::e::", "(", ")",
+        "::ab``:::ok",
+        ":X0:xz::plain"
     ]))
     loadedEntries := ""
     for item in joined.Items
         loadedEntries .= item.Name "=" item.Body "|"
-    AssertEqual(loadedEntries, "gap=::ghost::boo|after=shown|keep=exempt|", "Sections and comment blocks read as AutoHotkey reads them")
+    AssertEqual(loadedEntries, "gap=::ghost::boo|after=shown|keep=exempt|ab:=ok|xz=plain|", "Sections, comment blocks, escaped colons and X0 read as AutoHotkey reads them")
     AssertEqual(JoinLines(joined.Errors), JoinLines(["line 1, pre: Text before a continuation section is not supported."
         , "line 11, two: More than one continuation section is not supported."
-        , "line 27, tok: Uses {{ or }}, which the picker would read as a snippet token."]), "Entries the picker cannot show as typed are refused")
+        , "line 27, tok: Uses {{ or }}, which the picker would read as a snippet token."
+        , "line 29, e: Runs code instead of typing text."]), "Entries the picker cannot show as typed are refused")
 
     base := A_Temp "\au-hotkeys-hotstrings-" ProcessExist()
     for folder in ["one", "many", "lots", "misc"]
