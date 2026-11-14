@@ -25,12 +25,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The digest is GitHub's for the v2.0.31 release asset, matched by hashing the
+      # download on 15 November 2026. Keep the version with the one winget installs.
       - name: Download verified AutoHotkey v2 runtime
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path .tools -Force | Out-Null
-          Invoke-WebRequest -Uri 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.30/AutoHotkey_2.0.30.zip' -OutFile '.tools/AutoHotkey.zip'
-          $expected = '1e0ece7ecb2d5646e55758150472677996a57f9db5c83d2996d8b47b9e2f31a4'
+          Invoke-WebRequest -Uri 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.31/AutoHotkey_2.0.31.zip' -OutFile '.tools/AutoHotkey.zip'
+          $expected = 'ca1a595aca4528755d8d4cd7fed23d497a37bd9a0b6892072612d68dee1bd00a'
           $actual = (Get-FileHash '.tools/AutoHotkey.zip' -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -cne $expected) { throw 'AutoHotkey archive checksum mismatch.' }
           Expand-Archive -LiteralPath '.tools/AutoHotkey.zip' -DestinationPath '.tools/AutoHotkey'

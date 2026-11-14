@@ -189,7 +189,7 @@ For a portable or differently located runtime, pass `-AutoHotkey 'C:\path\to\Aut
 
 The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all 4 shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
 
-GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.30 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
+GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.31 runtimes for x64 and x86. The interactive checks must be run locally. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
 CodeQL, actionlint and zizmor check the GitHub Actions workflows. For each tagged release, the release workflow runs the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands. For a firm's IT review, [what the script reads, types and stores](docs/it-review.md) lists each behaviour with a way to check it in the source.
 
