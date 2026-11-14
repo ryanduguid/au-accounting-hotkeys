@@ -117,27 +117,18 @@ ReadUtf8Snippet(path, maximum := 16384) {
 ; anything. Only replacements that type literal text load; every other entry is reported by line.
 SnippetsFromHotstrings(source) {
     result := {Items: [], Errors: []}
-    lines := StrSplit(NormaliseLineEndings(source), "`n")
-    index := 0
-    inComment := false
-    while index < lines.Length {
-        index += 1
-        line := lines[index]
-        if inComment || RegExMatch(line, "^[ `t]*/\*") {
-            inComment := !InStr(line, "*/")
-            continue
-        }
+    for line in HotstringScriptLines(source) {
         ; A directive that sets default options changes every entry below it, as X would.
-        if RegExMatch(line, "^[ `t]*#(\w+)[ `t]*(\S*)", &directive) && directive[1] = "Hotstring" && !RegExMatch(directive[2], "i)^(EndChars|NoMouse)\z")
-            throw ValueError("line " index ": #" directive[1] " changes the default options; set options on each entry instead.")
-        if !RegExMatch(line, "^[ `t]*:([^:]*):(.+?)::(.*)\z", &entry)
+        if RegExMatch(line.Text, "^#(\w+)[ `t]*(\S*)", &directive) && directive[1] = "Hotstring" && !RegExMatch(directive[2], "i)^(EndChars|NoMouse)\z")
+            throw ValueError("line " line.Number ": #" directive[1] " changes the default options; set options on each entry instead.")
+        if !RegExMatch(line.Text, "^:([^:]*):(.+?)::(.*)\z", &entry)
             continue
-        start := index
+        start := line.Number
         try {
             mode := ""
             options := entry[1]
             while options != "" {
-                if !RegExMatch(options, "i)^(?:[ `t]+|\*0?|\?0?|B0?|C[01]?|K-?[0-9]+|O0?|P[0-9]+|S[IPE]|Z0?|(T0?|R0?|X))", &option)
+                if !RegExMatch(options, "i)^(?:[ `t]+|\*0?|\?0?|B0?|C[01]?|K-?[0-9]+|O0?|P[0-9]+|S[IPE0]?|Z0?|(T0?|R0?|X))", &option)
                     throw ValueError("Unknown option in :" entry[1] ":.")
                 if option[1] = "X"
                     throw ValueError("Runs code instead of typing text.")
@@ -149,35 +140,76 @@ SnippetsFromHotstrings(source) {
             if !RegExMatch(name, "^[!-~]{1,40}\z")
                 throw ValueError("The abbreviation becomes the label, so it must be 1 to 40 ASCII letters, digits or symbols, without spaces.")
             text := WithoutComment(entry[3])
-            if text = "" {
-                if index = lines.Length || !RegExMatch(lines[index + 1], "^[ `t]*\((.*)\z", &opening)
-                    throw ValueError("Runs code instead of typing text.")
-                index += 1
-                section := []
-                closing := ""
-                while index < lines.Length {
-                    index += 1
-                    if RegExMatch(lines[index], "^[ `t]*\)(.*)\z", &closing)
-                        break
-                    section.Push(lines[index])
-                }
-                if !IsObject(closing)
+            if line.Sections.Length {
+                if text != ""
+                    throw ValueError("Text before a continuation section is not supported.")
+                if line.Sections.Length > 1
+                    throw ValueError("More than one continuation section is not supported.")
+                section := line.Sections[1]
+                if !section.Closed
                     throw ValueError("The continuation section has no closing parenthesis.")
-                if WithoutComment(opening[1]) != "" || WithoutComment(closing[1]) != ""
+                if section.Options != "" || section.Tail != ""
                     throw ValueError("Continuation options and text after the closing parenthesis are not supported.")
-                text := ContinuationText(section)
+                text := ContinuationText(section.Lines)
                 ; A continuation section types as text unless an option says otherwise.
                 mode := mode = "" ? "text" : mode
-            }
+            } else if text = ""
+                throw ValueError("Runs code instead of typing text.")
             text := AhkUnescape(text)
             if mode != "text" && RegExMatch(text, "[{}^!+#]")
                 throw ValueError("Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text.")
+            ; The hotstring types {{...}} as it stands, so the picker must not read it as a token.
+            if InStr(text, "{{") || InStr(text, "}}")
+                throw ValueError("Uses {{ or }}, which the picker would read as a snippet token.")
             result.Items.Push({Name: name, Body: text, Line: start})
         } catch ValueError as problem {
             result.Errors.Push("line " start ", " entry[2] ": " problem.Message)
         }
     }
     return result
+}
+
+; The lines AutoHotkey 2.0's loader reads as code, each {Number, Text, Sections}. Text is trimmed.
+; Blank lines, lines starting with ; and /* */ blocks are skipped: a block starts with a line that
+; starts with /*, and ends with a line that ends with */ or starts with */, whose rest is code. Each
+; continuation section, a line starting with ( and without ( or ) in its options except in Join,
+; joins the code line above it, however many blank or comment lines lie between.
+HotstringScriptLines(source) {
+    lines := StrSplit(StrReplace(StrReplace(CheckedText(source, 65536), "`r`n", "`n"), "`r", "`n"), "`n")
+    code := []
+    inComment := false
+    index := 0
+    while index < lines.Length {
+        index += 1
+        text := Trim(lines[index], " `t")
+        if !inComment && SubStr(text, 1, 2) = "/*"
+            inComment := true
+        if inComment {
+            if SubStr(text, 1, 2) != "*/" {
+                inComment := SubStr(text, -2) != "*/"
+                continue
+            }
+            inComment := false
+            text := LTrim(SubStr(text, 3), " `t")
+        }
+        if text = "" || SubStr(text, 1, 1) = ";"
+            continue
+        if !RegExMatch(WithoutComment(text), "^\((?!:)(.*)\z", &opening) || RegExMatch(opening[1], "i)(?:^|[ `t])(?!join)[^ `t]*[()]") {
+            code.Push({Number: index, Text: text, Sections: []})
+            continue
+        }
+        section := {Options: Trim(opening[1], " `t"), Lines: [], Tail: "", Closed: false}
+        while !section.Closed && index < lines.Length {
+            index += 1
+            if section.Closed := RegExMatch(lines[index], "^[ `t]*\)(.*)\z", &closing)
+                section.Tail := Trim(WithoutComment(closing[1]), " `t")
+            else
+                section.Lines.Push(lines[index])
+        }
+        if code.Length
+            code[code.Length].Sections.Push(section)
+    }
+    return code
 }
 
 ; A semicolon with a space or tab to its left starts a comment; trailing spaces and tabs are dropped.

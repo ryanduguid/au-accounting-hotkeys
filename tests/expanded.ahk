@@ -304,6 +304,25 @@ TestHotstringSnippets() {
     AssertValueError(() => SnippetsFromHotstrings("#Hotstring X`n::a::MsgBox"), "Default options refuse the file", "line 1: #Hotstring changes the default options; set options on each entry instead.")
     AssertEqual(SnippetsFromHotstrings("#Hotstring NoMouse`n::a::b").Items.Length, 1, "NoMouse leaves text unchanged")
 
+    ; AutoHotkey joins a continuation section to the code line above it, past blank and comment lines,
+    ; and ends a /* block only at a line that starts or ends with */.
+    joined := SnippetsFromHotstrings(JoinLines([
+        "::pre::by the", "(", "way", ")",
+        "::gap::", "", "; a comment line", "(", "::ghost::boo", ")",
+        "::two::", "(", "first", ")", "(", "second", ")",
+        'help := "', "(", "::shadow::from a string", ')"',
+        "/* opening */ ::c1::commented", "::c2::commented", "a */ b", "::c3::commented", "*/ ::after::shown",
+        ":T:tok::Due {{TODAY_AU}}",
+        ":S:keep::exempt"
+    ]))
+    loadedEntries := ""
+    for item in joined.Items
+        loadedEntries .= item.Name "=" item.Body "|"
+    AssertEqual(loadedEntries, "gap=::ghost::boo|after=shown|keep=exempt|", "Sections and comment blocks read as AutoHotkey reads them")
+    AssertEqual(JoinLines(joined.Errors), JoinLines(["line 1, pre: Text before a continuation section is not supported."
+        , "line 11, two: More than one continuation section is not supported."
+        , "line 27, tok: Uses {{ or }}, which the picker would read as a snippet token."]), "Entries the picker cannot show as typed are refused")
+
     base := A_Temp "\au-hotkeys-hotstrings-" ProcessExist()
     for folder in ["one", "many", "lots", "misc"]
         DirCreate(base "\" folder)
@@ -340,7 +359,7 @@ TestHotstringSnippets() {
 
         FileAppend("; no entries", base "\misc\Empty.ahk", "UTF-8-RAW")
         FileAppend("#Hotstring X`n::a::MsgBox", base "\misc\Defaults.ahk", "UTF-8-RAW")
-        FileAppend("; " RepeatText("a", 20000) "`n::big::text", base "\misc\Large.ahk", "UTF-8-RAW")
+        FileAppend("; " RepeatText("a", 40000) "`n::big::text", base "\misc\Large.ahk", "UTF-8-RAW")
         misc := LoadSnippets([base "\misc"], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
         AssertEqual(misc.Items.Length, 1, "An .ahk file above the text-file character limit loads")
         AssertEqual(misc.Items[1].Name, "big", "Large file entry loaded")
