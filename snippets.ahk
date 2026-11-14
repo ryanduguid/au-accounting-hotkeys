@@ -169,7 +169,7 @@ SnippetsFromHotstrings(source) {
             text := AhkUnescape(text)
             if mode != "text" && RegExMatch(text, "[{}^!+#]")
                 throw ValueError("Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text.")
-            ; The hotstring types {{...}} as it stands, so the picker must not read it as a token.
+            ; The entry types {{...}} as it stands, so the picker must not read it as a token.
             if InStr(text, "{{") || InStr(text, "}}")
                 throw ValueError("Uses {{ or }}, which the picker would read as a snippet token.")
             result.Items.Push({Name: name, Body: text, Line: start})
