@@ -4,7 +4,9 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Existing AutoHotkey hotstrings in the picker: an `.ahk` file in `snippets.local` is read, never run, and each entry that types literal text becomes a snippet labelled with its abbreviation. Entries that run code or use key syntax are listed by line and not loaded. The library loads at most 1,000 snippets.
 
 ## [1.0.0] - 2026-11-14
 

@@ -14,7 +14,7 @@ This page states what the script reads, types and stores, and how to check each 
 - `config.ini` beside the script, for the selected financial year, quarter, allowed applications and shortcut keys (`ReadSettings`).
 - The executable name of the active window, to apply the `[Scope] Applications` list (`IsAllowedApplication`).
 - The computer's local date, for the Today shortcut and date commands.
-- When the picker opens, top-level `.txt` files in `snippets` and `snippets.local` beside the script: at most 100 files, each at most 65,536 bytes. It refuses linked folders and files (`LoadSnippets`).
+- When the picker opens, top-level `.txt` and `.ahk` files in `snippets` and `snippets.local` beside the script: at most 100 files, each at most 65,536 bytes. It reads hotstrings from an `.ahk` file as text and never runs it. It refuses linked folders and files (`LoadSnippets`).
 - The clipboard, only in 2 cases: when the user chooses **Load clipboard and preview**, and straight after **Copy result**, to confirm that the clipboard holds the preview (`clipboard.ahk`). Opening and searching the picker do not read it.
 
 ## What it types

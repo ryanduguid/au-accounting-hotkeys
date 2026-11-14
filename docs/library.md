@@ -59,7 +59,9 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 
 `ExpandSnippet(body, context, answers := "")` expands the documented token whitelist once. Context contains the selected ending `Year`, fiscal `Quarter` and explicit `Timestamp`. `answers` holds one line for each field `SnippetFields(body)` returns, in that order; without answers, each field expands to `[label]`. It returns text or throws `ValueError`. Unknown and malformed tokens fail; AutoHotkey source, environment references and key syntax remain literal text.
 
-`LoadSnippets(directories, context)` returns `{Items, Errors}`. Each item contains `Name` and `Body`; errors describe excluded files. Production calls it with the two fixed snippet folders. It reads top-level UTF-8 `.txt` files, snapshots their contents and enforces the limits in the README. It does not write files or watch folders.
+`LoadSnippets(directories, context)` returns `{Items, Errors}`. Each item contains `Name` and `Body`; errors describe excluded files and entries. Production calls it with the two fixed snippet folders. It reads top-level UTF-8 `.txt` and `.ahk` files, snapshots their contents and enforces the limits in the README. It does not write files or watch folders.
+
+`SnippetsFromHotstrings(source)` returns `{Items, Errors}` for the text of an AutoHotkey script. Each item contains `Name` (the abbreviation), `Body` (the text the entry types) and `Line`; each error names the line and abbreviation of an entry that was not loaded and why. It reads only; it never runs the source. A `#Hotstring` line that sets default options throws `ValueError`.
 
 ## Commands and tests
 
