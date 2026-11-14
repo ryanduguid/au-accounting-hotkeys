@@ -119,7 +119,7 @@ LoadCommandCatalogue(settings, root := "") {
     if root = ""
         SplitPath(A_LineFile, , &root)
     commands := BuiltinCommands()
-    loaded := LoadSnippets([root "\snippets", root "\snippets.local"], {Year: settings.Year, Quarter: settings.Quarter, Timestamp: A_Now})
+    loaded := LoadSnippets([root "\snippets", root "\snippets.local"], {Year: settings.Year, Quarter: settings.Quarter, HolidayState: settings.HolidayState, Timestamp: A_Now})
     for item in loaded.Items
         commands.Push(SnippetCommand(item))
     return {Commands: commands, Errors: loaded.Errors}

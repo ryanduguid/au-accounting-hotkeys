@@ -68,14 +68,25 @@ ExpandSnippet(body, context, answers := "") {
             throw ValueError("A snippet may contain at most 100 tokens.")
         literal := SubStr(body, position, found - position)
         CheckTokenDelimiters(literal)
-        if !tokens.Has(token[1])
-            throw ValueError("Snippet contains an unknown token.")
-        result .= literal tokens[token[1]]
+        result .= literal (tokens.Has(token[1]) ? tokens[token[1]] : ShiftedDateToken(token[1], context))
         position := found + token.Len
     }
     remainder := SubStr(body, position)
     CheckTokenDelimiters(remainder)
     return CheckedText(result remainder)
+}
+
+; {{TODAY_AU+N}} is N calendar days after today. {{DUE_AU+N}} is that date moved off a weekend
+; or public holiday for the [Holidays] State, as BusinessDueDate does. N is 1 to 999.
+ShiftedDateToken(name, context) {
+    if !RegExMatch(name, "^(TODAY|DUE)_AU\+(.*)\z", &parts)
+        throw ValueError("Snippet contains an unknown token.")
+    if !RegExMatch(parts[2], "^[1-9][0-9]{0,2}\z")
+        throw ValueError("Shift " parts[1] "_AU by 1 to 999 days, such as {{" parts[1] "_AU+14}}.")
+    date := AustralianDate(DateAdd(context.Timestamp, Integer(parts[2]), "Days"))
+    if parts[1] = "TODAY"
+        return date
+    return BusinessDueDate(date, context.HasOwnProp("HolidayState") ? context.HolidayState : "")
 }
 
 CheckTokenDelimiters(text) {
