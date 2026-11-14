@@ -261,6 +261,9 @@ TestSnippetDateShifts() {
     stateMessage := "Set State under [Holidays] in config.ini to ATO, or to ACT, NSW, NT, QLD, SA, TAS, VIC or WA."
     AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2026, Quarter: 4, HolidayState: "", Timestamp: "20261113000000"}), "Due shift needs a State", stateMessage)
     AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2026, Quarter: 4, Timestamp: "20261113000000"}), "Library context without a State refused", stateMessage)
+    ; New Year's Day 2027 is a Friday holiday everywhere; 30/06/2027 is the holiday table's last date.
+    AssertEqual(ExpandSnippet("{{TODAY_AU+14}} {{DUE_AU+14}}", {Year: 2027, Quarter: 2, HolidayState: "VIC", Timestamp: "20261218000000"}), "01/01/2027 04/01/2027", "Shift across the year end")
+    AssertEqual(ExpandSnippet("{{DUE_AU+14}} {{DUE_AU+18}}", {Year: 2027, Quarter: 4, HolidayState: "ATO", Timestamp: "20270612000000"}), "28/06/2027 30/06/2027", "Due shift up to the table's last date")
     AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2027, Quarter: 4, HolidayState: "VIC", Timestamp: "20270625000000"}), "Due shift past the holiday table refused")
     AssertEqual(ExpandSnippet("{{TODAY_AU+14}}", {Year: 2027, Quarter: 4, HolidayState: "", Timestamp: "20270625000000"}), "09/07/2027", "Calendar shift needs no holiday table")
 
