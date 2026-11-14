@@ -4,7 +4,9 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Shifted dates in snippets: `{{TODAY_AU+N}}` is N calendar days after today, and `{{DUE_AU+N}}` moves that date off a weekend or public holiday for the `[Holidays] State`, as `BusinessDueDate` does. N is 1 to 999.
 
 ## [1.0.0] - 2026-11-14
 

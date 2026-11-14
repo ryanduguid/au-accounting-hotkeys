@@ -12,6 +12,7 @@ TestExpanded() {
     TestCatalogue()
     TestSnippetSearch()
     TestSnippetFields()
+    TestSnippetDateShifts()
     TestSnippetLoading()
     TestSnippetLabelsAndRecovery()
     TestSnippetLimits()
@@ -241,6 +242,41 @@ TestSnippetFields() {
     } finally palette.Close()
 }
 
+TestSnippetDateShifts() {
+    context := {Year: 2026, Quarter: 4, HolidayState: "VIC", Timestamp: "20261113000000"}
+    AssertEqual(ExpandSnippet("Due {{TODAY_AU+14}}", context), "Due 27/11/2026", "Calendar-day shift")
+    AssertEqual(ExpandSnippet("{{TODAY_AU+1}}|{{TODAY_AU+999}}", context), "14/11/2026|08/08/2029", "Shift of 1 and 999 days")
+    AssertEqual(ExpandSnippet("{{DUE_AU+14}}", context), "27/11/2026", "Business day kept")
+    AssertEqual(ExpandSnippet("{{DUE_AU+15}}", context), "30/11/2026", "Saturday moved to Monday")
+    christmas := {Year: 2026, Quarter: 2, HolidayState: "NSW", Timestamp: "20261211000000"}
+    AssertEqual(ExpandSnippet("{{TODAY_AU+14}} {{DUE_AU+14}}", christmas), "25/12/2026 29/12/2026", "Christmas and Boxing Day skipped")
+    grandFinalEve := "20260911000000"
+    for vector in [["VIC", "28/09/2026"], ["NSW", "25/09/2026"], ["ATO", "29/09/2026"]]
+        AssertEqual(ExpandSnippet("{{DUE_AU+14}}", {Year: 2027, Quarter: 1, HolidayState: vector[1], Timestamp: grandFinalEve}), vector[2], "Holiday State " vector[1] " applied")
+    AssertEqual(ProduceCommand(SnippetCommand({Name: "reminder", Body: "Pay by {{DUE_AU+15}}"}), context), "Pay by 30/11/2026", "Snippet command shifts dates")
+    for badToken in ["{{TODAY_AU+0}}", "{{TODAY_AU+1000}}", "{{TODAY_AU+01}}", "{{TODAY_AU+}}", "{{DUE_AU+ 1}}", "{{DUE_AU+1.5}}"]
+        AssertValueError(ExpandSnippet.Bind(badToken, context), "Bad shift rejected: " badToken)
+    for unknownToken in ["{{TODAY_AU-1}}", "{{today_au+1}}", "{{TODAY_ISO+1}}", "{{DUE+1}}"]
+        AssertValueError(ExpandSnippet.Bind(unknownToken, context), "Unknown shift token rejected: " unknownToken, "Snippet contains an unknown token.")
+    stateMessage := "Set State under [Holidays] in config.ini to ATO, or to ACT, NSW, NT, QLD, SA, TAS, VIC or WA."
+    AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2026, Quarter: 4, HolidayState: "", Timestamp: "20261113000000"}), "Due shift needs a State", stateMessage)
+    AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2026, Quarter: 4, Timestamp: "20261113000000"}), "Library context without a State refused", stateMessage)
+    AssertValueError(() => ExpandSnippet("{{DUE_AU+14}}", {Year: 2027, Quarter: 4, HolidayState: "VIC", Timestamp: "20270625000000"}), "Due shift past the holiday table refused")
+    AssertEqual(ExpandSnippet("{{TODAY_AU+14}}", {Year: 2027, Quarter: 4, HolidayState: "", Timestamp: "20270625000000"}), "09/07/2027", "Calendar shift needs no holiday table")
+
+    directory := A_Temp "\au-hotkeys-date-shifts-" ProcessExist()
+    DirCreate(directory "\snippets.local")
+    try {
+        FileAppend("Reply by {{DUE_AU+14}}", directory "\snippets.local\Due-reminder.txt", "UTF-8-RAW")
+        noState := LoadCommandCatalogue({Year: 2026, Quarter: 4, HolidayState: ""}, directory)
+        AssertEqual(noState.Errors.Length, 1, "Due snippet without a State excluded visibly")
+        AssertEqual(noState.Errors[1], "Due-reminder: " stateMessage, "Exclusion names the setting")
+        withState := LoadCommandCatalogue({Year: 2026, Quarter: 4, HolidayState: "VIC"}, directory)
+        for problem in withState.Errors
+            AssertEqual(InStr(problem, stateMessage), 0, "Catalogue passes the [Holidays] State to snippets")
+    } finally DirDelete(directory, true)
+}
+
 TestSnippetLimits() {
     directory := A_Temp "\au-hotkeys-snippet-limits-" ProcessExist()
     context := {Year: 2026, Quarter: 4, Timestamp: "20240229000000"}
@@ -466,7 +502,7 @@ TestCatalogue() {
     AssertValueError(() => ExpandSnippet(RepeatText("{{FY_END}}", 101), context), "Token count limit")
     AssertEqual(StrLen(ExpandSnippet(RepeatText("a", 16384), context)), 16384, "Snippet at character limit")
     AssertValueError(() => ExpandSnippet(RepeatText("a", 16385), context), "Snippet over character limit")
-    catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4}, A_ScriptDir "\..")
+    catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4, HolidayState: ""}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
     AssertEqual(catalogue.Commands.Length, 77, "Built-ins and bundled snippets discovered")
     for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
