@@ -12,6 +12,7 @@ TestExpanded() {
     TestCatalogue()
     TestSnippetSearch()
     TestSnippetFields()
+    TestSnippetChoices()
     TestSnippetDateShifts()
     TestSnippetLoading()
     TestSnippetLabelsAndRecovery()
@@ -383,6 +384,69 @@ TestHotstringSnippets() {
         AssertEqual(misc.Errors[1], "Defaults.ahk: line 1: #Hotstring changes the default options; set options on each entry instead.", "File-level refusal reported")
         AssertEqual(misc.Errors[2], "Empty.ahk: No hotstrings found.", "File without entries reported")
     } finally DirDelete(base, true)
+}
+
+TestSnippetChoices() {
+    context := {Year: 2026, Quarter: 4, Timestamp: "20240229000000"}
+    body := "Basis: {{PICK:Basis|Cash|Accruals}} for {{ASK:Client}}. Confirmed {{PICK:Basis|Cash|Accruals}}."
+    placeholders := "Basis: [Basis: Cash / Accruals] for [Client]. Confirmed [Basis: Cash / Accruals]."
+    completed := "Basis: Accruals for Example Pty Ltd. Confirmed Accruals."
+    fields := SnippetFields(body)
+    AssertEqual(fields.Length "|" fields[1] "|" fields[2], "2|Basis|Client", "Choice field asks once, in order")
+    AssertEqual(ExpandSnippet(body, context), placeholders, "Unanswered choice shows its choices")
+    AssertEqual(ExpandSnippet(body, context, " Accruals `nExample Pty Ltd"), completed, "Chosen value fills every use")
+    AssertEqual(ExpandSnippet("{{PICK:Basis|Cash|Accruals}}", context, "Cash"), "Cash", "First choice accepted")
+    for badAnswer in ["cash", "Other", "Cash|Accruals", "Cash / Accruals"]
+        AssertValueError(ExpandSnippet.Bind(body, context, badAnswer "`nExample Pty Ltd"), "Answer outside the choices refused: " badAnswer, "Answer Basis with one of: Cash, Accruals.")
+    AssertValueError(() => ExpandSnippet(body, context, "Cash"), "Missing answer refused")
+    ten := ""
+    Loop 10
+        ten .= "|C" A_Index
+    AssertEqual(ExpandSnippet("{{PICK:Many" ten "}}", context, "C10"), "C10", "Ten choices allowed")
+    AssertEqual(ExpandSnippet("{{PICK:Long|" RepeatText("a", 100) "|b}}", context, "b"), "b", "100-character choice allowed")
+    badDefinitions := ["{{PICK:|Cash|Accruals}}", "{{PICK:Basis}}", "{{PICK:Basis|Cash}}", "{{PICK:Basis|Cash|Cash}}"
+        , "{{PICK:Basis|Cash||Accruals}}", "{{PICK:Basis|Cash|Accruals|}}", "{{PICK:Basis| Cash|Accruals}}"
+        , "{{PICK:Basis|Ca`tsh|Accruals}}", "{{PICK:Basis|Ca`nsh|Accruals}}", "{{PICK:Many" ten "|C11}}"
+        , "{{PICK:Long|" RepeatText("a", 101) "|b}}", "{{PICK:Basis|A|B}}{{PICK:Basis|A|C}}"
+        , "{{ASK:Basis}}{{PICK:Basis|A|B}}", "{{pick:Basis|A|B}}", "{{ASK:Basis|A|B}}"]
+    for badDefinition in badDefinitions
+        AssertValueError(ExpandSnippet.Bind(badDefinition, context), "Bad choice field rejected: " badDefinition)
+    AssertValueError(() => SnippetFields("{{PICK:|Cash|Accruals}}"), "Empty choice label refused", "Field labels must start with an ASCII letter or digit and use at most 40 ASCII letters, digits, spaces, underscores or hyphens.")
+    AssertValueError(() => SnippetFields("{{PICK:Basis|Cash}}"), "One choice refused", "Choice field Basis needs 2 to 10 choices separated by |.")
+    AssertValueError(() => SnippetFields("{{PICK:Basis|Cash|Cash}}"), "Duplicate choice refused", "Choice field Basis lists Cash twice.")
+    AssertValueError(() => SnippetFields("{{PICK:Basis|Cash||Accruals}}"), "Doubled separator refused", "Each choice for Basis needs 1 to 100 characters, no spaces at either end and no control characters.")
+    AssertValueError(() => SnippetFields("{{PICK:Basis|Ca`tsh|Accruals}}"), "Control character in a choice refused", "Each choice for Basis needs 1 to 100 characters, no spaces at either end and no control characters.")
+    eleven := ""
+    Loop 10
+        eleven .= "{{ASK:F" A_Index "}}"
+    AssertValueError(() => SnippetFields(eleven "{{PICK:G|A|B}}"), "Choice fields count toward the 10-field limit")
+
+    command := SnippetCommand({Name: "basis-note", Body: body})
+    AssertEqual(command.MaxInput, 404, "Choice answers bounded like other answers")
+    catalogue := BuiltinCommands()
+    catalogue.Push(command)
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake, catalogue)
+    try {
+        ChooseCommand(palette, "Snippet:basis-note")
+        AssertEqual(palette.Preview.Value, placeholders, "Picker previews the choices")
+        AssertEqual(palette.CopyResult(), false, "Unanswered choice cannot be copied")
+        ChangeTestInput(palette, "Other`nExample Pty Ltd")
+        AssertEqual(palette.Output, "", "Answer outside the choices has no result")
+        AssertEqual(palette.CopyResult(), false, "Answer outside the choices cannot be copied")
+        ChangeTestInput(palette, "")
+        AssertEqual(palette.CopyResult(), false, "Cleared answers cannot be copied")
+        AssertEqual(fake.Writes, 0, "Refused and cancelled choices write nothing")
+        ChangeTestInput(palette, "Accruals`nExample Pty Ltd")
+        AssertEqual(palette.CopyResult(), true, "Valid choice copies")
+        AssertEqual(fake.Output, completed, "Copy uses the chosen value")
+        AssertEqual(fake.Reads, 0, "Choosing does not read the clipboard")
+    } finally palette.Close()
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake, catalogue)
+    ChooseCommand(palette, "Snippet:basis-note")
+    palette.Close()
+    AssertEqual(fake.Writes, 0, "Closing the picker before choosing writes nothing")
 }
 
 TestSnippetLimits() {
