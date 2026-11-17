@@ -21,6 +21,14 @@ schedule. These tools analyse GitHub Actions workflows. They do not analyse
 AutoHotkey source or replace its tests. CodeQL results appear in the
 repository's Security tab; a zizmor finding fails the zizmor job.
 
+The Secrets workflow runs the shared secrets scan from
+`ryanduguid/release-policy`: betterleaks with `.gitleaks.toml`, which extends
+the shared client-identifier rules in `.github/secrets-rules.toml`, over the
+commits each push or pull request adds and over the full history weekly or
+when run by hand. It scans a pull request a second time with the base branch's
+`.gitleaks.toml`, so add an allowlist entry in its own pull request, before the
+change that needs it.
+
 Report suspected vulnerabilities using the repository's Security policy. Do not
 include client records, clipboard contents, personal settings or credentials in
 a public issue.
