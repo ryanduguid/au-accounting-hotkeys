@@ -1,0 +1,30 @@
+# Secret and client-identifier scanning, run by .github/workflows/secrets.yml.
+#
+# The rules are shared: .github/secrets-rules.toml adds 4 client-identifier
+# rules (a tax file number, ABN, bank detail or Medicare number beside its
+# label) to the default betterleaks credential rules. That file is a copy of
+# rules.toml in ryanduguid/release-policy's secrets-scan action, which the
+# workflow runs; the action fails when the copy differs. This file holds only
+# this repository's allowlists.
+#
+# Run a local scan from the repository root, where the path below resolves:
+# betterleaks git . --config .gitleaks.toml
+
+title = "au-accounting-hotkeys"
+
+[extend]
+path = ".github/secrets-rules.toml"
+
+[[allowlists]]
+description = "The ABN test vectors of the identifier commands, allowed in their test file only"
+targetRules = ["au-business-number"]
+condition = "AND"
+paths = [
+  '''^tests/expanded\.ahk$''',
+]
+regexes = [
+  # The ATO's own ABN, the worked example ABN Lookup publishes.
+  '''^51[ -]?824[ -]?753[ -]?556$''',
+  # A fabricated vector that passes the checksum, and its failing neighbour.
+  '''^10[ -]?000[ -]?000[ -]?00[01]$''',
+]
