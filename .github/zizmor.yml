@@ -6,3 +6,6 @@ rules:
       # Runs only the attribution policy from the trusted base branch, never pull
       # request code.
       - no-ai-attribution.yml:14
+      # Scans the pull request's commits as git objects with the action pinned
+      # in the base branch's copy; it checks out and runs none of their files.
+      - secrets.yml:9
