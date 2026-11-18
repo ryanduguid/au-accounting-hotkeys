@@ -1,0 +1,8 @@
+# Accepted zizmor findings, each with its reason. An entry names a file and line,
+# so moving the line fails CI and brings the reason back for review.
+rules:
+  dangerous-triggers:
+    ignore:
+      # Runs only the attribution policy from the trusted base branch, never pull
+      # request code.
+      - no-ai-attribution.yml:14
