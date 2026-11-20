@@ -89,10 +89,12 @@ Shorthand such as `30 days EOM` is rejected because suppliers read it in more th
 
 `BusinessDueDate` returns the input date when it is a business day, and otherwise the first business day after it. A business day is not a Saturday, Sunday or public holiday. Set `State` under `[Holidays]` in `config.ini` first:
 
-- `ATO` counts a public holiday for the whole of any State or Territory, as the ATO does for lodgment and payment due dates, so `25/09/2026` (the Friday before the AFL Grand Final, Victoria only) gives `29/09/2026`, past King's Birthday (WA) on 28 September.
-- `ACT`, `NSW`, `NT`, `QLD`, `SA`, `TAS`, `VIC` or `WA` counts only that State's or Territory's holidays, so the same date stays `25/09/2026` for `NSW`.
+- `ATO` counts every date listed as a public holiday in the ATO's tables.
+- `ACT`, `NSW`, `NT`, `QLD`, `SA`, `TAS`, `VIC` or `WA` counts only that State's or Territory's holidays, so 25 September 2026 stays `25/09/2026` for `NSW`.
 
-The holidays are the ATO's published tables for 1 July 2026 to 30 June 2027, and the command refuses a date outside that range rather than skipping weekends only. It counts every day in those tables, including King's Birthday (WA) on 28 September 2026 and Melbourne Cup on 3 November 2026, which some regions replace with another day, and Christmas Eve and New Year's Eve, which are holidays from the evening only, so its date matches the ATO's published date. Holiday dates can change during the year; check a result that matters against the official list. Input is limited to 64 characters.
+The command uses the [ATO's published tables](https://www.ato.gov.au/tax-and-super-professionals/for-tax-professionals/prepare-and-lodge/registered-agent-lodgment-program/lodgment-and-payment-dates-on-weekends-or-public-holidays) for 1 July 2026 to 30 June 2027. It refuses dates outside that range and accepts up to 64 characters. The tables include Melbourne Cup on 3 November 2026, which some regions replace with another day, and the evening-only holidays on Christmas Eve and New Year's Eve.
+
+The table gives 28 September as the first business day after 25 September 2026, the Victorian public holiday before the AFL Grand Final. It also lists 28 September as King's Birthday in WA, which some regions observe on another date. The command counts both entries as holidays in `ATO` mode and returns `29/09/2026` for `25/09/2026`. Holiday dates can change during the year. Confirm the due date before relying on the calculation, especially when the published dates conflict.
 
 `AgeingBucket` takes the due date and the as-at date, in the same form as `DaysBetween`, and counts days past due: `Current` (on or before the due date), `1 to 30 days overdue`, `31 to 60 days overdue`, `61 to 90 days overdue` or `Over 90 days overdue`. These are 30-day steps from the due date; reports that age by calendar month or from the invoice date can place an amount differently. Input is limited to 200 characters.
 

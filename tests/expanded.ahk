@@ -647,7 +647,7 @@ TestWorkpaperArithmetic() {
         ; State-only holidays count for their State, and for every State under the ATO rule.
         ["25/09/2026", "VIC", "28/09/2026"], ["25/09/2026", "NSW", "25/09/2026"], ["25/09/2026", "ATO", "29/09/2026"], ["05/10/2026", "QLD", "06/10/2026"], ["05/10/2026", "VIC", "05/10/2026"],
         ["14/06/2027", "QLD", "14/06/2027"], ["14/06/2027", "SA", "15/06/2027"], ["07/06/2027", "WA", "08/06/2027"], ["03/08/2026", "NT", "04/08/2026"], ["03/08/2026", "ACT", "03/08/2026"],
-        ; King's Birthday (WA) and Melbourne Cup are in the ATO's table, so they count as the ATO counts them.
+        ; ATO mode counts the listed King's Birthday (WA) and Melbourne Cup holidays.
         ["28/09/2026", "WA", "29/09/2026"], ["28/09/2026", "ATO", "29/09/2026"], ["28/09/2026", "NSW", "28/09/2026"],
         ["03/11/2026", "VIC", "04/11/2026"], ["03/11/2026", "ATO", "04/11/2026"], ["03/11/2026", "TAS", "03/11/2026"]
     ]
