@@ -214,9 +214,9 @@ Ordinal(day) {
 ; 1 July 2026, read 14 November 2026):
 ; https://www.ato.gov.au/tax-and-super-professionals/for-tax-professionals/prepare-and-lodge/registered-agent-lodgment-program/lodgment-and-payment-dates-on-weekends-or-public-holidays
 ; A holiday on a weekend needs no entry; the tables list its substitute weekday where a State has one.
-; Every day in the tables is here, King's Birthday (WA) on 28 September, Melbourne Cup on 3 November,
-; Christmas Eve and New Year's Eve 2026 included, so a result matches the ATO's published date (Ryan
-; Duguid's decision, 14 November 2026, as for ryanduguid/au-fpa-pack).
+; Include every weekday holiday in the tables (Ryan Duguid's decision, 14 November 2026).
+; The ATO's 25 September 2026 row gives 28 September as the next business day,
+; but the table also lists 28 September as a WA holiday. ATO mode counts both and returns 29 September.
 ; shortcut: one reviewed financial year; extend the list and the range in BusinessDueDate from the
 ; ATO's next tables, or each jurisdiction's official list, and date the new source here.
 HolidayStates() {
