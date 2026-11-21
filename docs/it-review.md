@@ -24,6 +24,7 @@ Only the 4 shortcuts type, and only into the active window: the selected financi
 ## What it stores
 
 - On the first run, it copies `config.example.ini` to `config.ini` beside the script. It never writes to `config.ini` afterwards; users edit it themselves.
+- **Add snippet** in the picker, when the user chooses **Save**, appends one line to `snippets.local\Added.ahk` beside the script, creating the folder and file if needed. It refuses a linked folder or file, a full folder and a file that would exceed 65,536 bytes (`AddHotstringSnippet`).
 - **Copy result** in the picker replaces the clipboard with the previewed text. Windows clipboard history, clipboard synchronisation and remote-desktop clipboard sharing may keep that text, under the firm's own settings.
 - Nothing else: no log, registry entry, temporary file or telemetry.
 
@@ -38,7 +39,7 @@ Select-String -Path .\*.ahk -Pattern 'Download|ComObj|DllCall|\bRun(Wait)?\(|Reg
     ForEach-Object { '{0}:{1}: {2}' -f $_.Filename, $_.LineNumber, $_.Line.Trim() }
 ```
 
-At `main` on 13 November 2026 this prints 12 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk` and 3 `DllCall` lines (`GetWindow` once, `MultiByteToWideChar` twice).
+At `main` on 13 November 2026 this prints 12 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, one `DirCreate` and one `FileAppend` in `picker.ahk` for **Add snippet**, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk` and 3 `DllCall` lines (`GetWindow` once, `MultiByteToWideChar` twice).
 
 `tests\check-boundaries.ps1` needs only PowerShell. It fails if any root `.ahk` file other than `clipboard.ahk` touches the clipboard, if any file other than `accounting-hotkeys.ahk` types, clicks, pastes or sends window messages, or if that file does so other than with `SendText`, or if the snippet loader writes a file. Positive controls in the same script show that each rule catches what it claims to. Run it with:
 

@@ -4,6 +4,10 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
+### Added
+
+- **Add snippet** in the picker: type a trigger and text, and the picker appends them to `snippets.local\Added.ahk` as an escaped AutoHotkey hotstring, reloads and selects the new snippet. A trigger already in use, ignoring case, is refused.
+
 ### Changed
 
 - Relicensed Ryan Duguid's original work under Apache-2.0. Earlier releases keep their original terms.

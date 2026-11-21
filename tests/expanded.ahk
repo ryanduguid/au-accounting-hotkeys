@@ -20,6 +20,7 @@ TestExpanded() {
     TestSnippetLimits()
     TestPickerState()
     TestPickerHolidayState()
+    TestAddSnippet()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
     AssertEqual(SettingsWith([["Hotkeys", "Picker", "!^Space"]]).Keys["Picker"], "^!Space", "Picker mapping normalised")
     AssertValueError(() => SettingsWith([["Hotkeys", "Picker", "Ins"]]), "Picker alias conflict rejected")
@@ -1104,5 +1105,58 @@ TestPickerTargetBoundary() {
     } finally {
         palette.Close()
         target.Destroy()
+    }
+}
+
+TestAddSnippet() {
+    tricky := "Hi `t;:: ``n {Enter} ^c #1`nsecond line `; kept`n"
+    AssertEqual(HotstringEntry("a:b``c", " " tricky " "), ':T:a``:b````c::``sHi ``t``;``:``: ````n {Enter} ^c #1``nsecond line ``; kept``n``s', "Hotstring escaping")
+    for test in [["sig", "Kind regards"], ["a:b``c", " " tricky " "], ["x;y", "Wexler McGill`n`tLevel 2"], ["::", "``n stays text"]] {
+        parsed := SnippetsFromHotstrings(HotstringEntry(test[1], test[2]))
+        AssertEqual(parsed.Items.Length, 1, "Hotstring round trip loads " A_Index)
+        AssertEqual(parsed.Items[1].Name, test[1], "Hotstring round trip label " A_Index)
+        AssertEqual(parsed.Items[1].Body, test[2], "Hotstring round trip text " A_Index)
+    }
+
+    root := A_Temp "\au-hotkeys-add-" ProcessExist()
+    DirCreate(root "\snippets")
+    FileAppend("Dear client", root "\snippets\Engagement-letter.txt", "UTF-8-RAW")
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    palette.Root := root
+    status := {Text: ""}
+    try {
+        AssertEqual(palette.AddSnippet("thx", "Thanks,`r`nAccounts", status), true, "Snippet added")
+        AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:thx::Thanks,``nAccounts`n", "Added.ahk holds the escaped hotstring")
+        AssertEqual(palette.SelectedId, "Snippet:thx", "New snippet reloaded and selected")
+        AssertEqual(palette.Output, "Thanks,`nAccounts", "New snippet previews its text")
+        AssertEqual(fake.Reads + fake.Writes, 0, "Adding a snippet leaves the clipboard alone")
+        AssertEqual(palette.AddSnippet("x;y", " " tricky, status), true, "Escaped snippet added")
+        AssertEqual(palette.Output, " " tricky, "Escaped snippet reads back exactly")
+        before := FileRead(root "\snippets.local\Added.ahk", "UTF-8")
+        for test in [
+            ["THX", "Other", "A snippet labelled THX already exists."],
+            ["engagement-letter", "Other", "A snippet labelled engagement-letter already exists."],
+            ["two words", "Text", "Use a trigger of 1 to 40 ASCII letters, digits or symbols, without spaces."],
+            ["", "Text", "Use a trigger of 1 to 40 ASCII letters, digits or symbols, without spaces."],
+            ["due", "Pay by {{DUE_AU+14}}", "Text must not contain {{ or }}. For date tokens or fields, add a .txt snippet instead."],
+            ["empty", "", "Text must not be empty."]
+        ] {
+            AssertEqual(palette.AddSnippet(test[1], test[2], status), false, "Snippet refused " A_Index)
+            AssertEqual(status.Text, test[3], "Refusal reason " A_Index)
+        }
+        AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), before, "Refusals leave Added.ahk unchanged")
+        FileDelete(root "\snippets.local\Added.ahk")
+        FileAppend(":T:old::Earlier entry", root "\snippets.local\Added.ahk", "UTF-8-RAW")
+        palette.AddSnippet("new", "Later entry", status)
+        AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:old::Earlier entry`n:T:new::Later entry`n", "Entry starts on a new line")
+        FileDelete(root "\snippets.local\Added.ahk")
+        Loop 100
+            FileAppend("Snippet " A_Index, root "\snippets.local\Full-" A_Index ".txt", "UTF-8-RAW")
+        AssertEqual(palette.AddSnippet("more", "Text", status), false, "Full snippets.local refused")
+        AssertEqual(FileExist(root "\snippets.local\Added.ahk"), "", "Full snippets.local not changed")
+    } finally {
+        palette.Close()
+        DirDelete(root, true)
     }
 }
