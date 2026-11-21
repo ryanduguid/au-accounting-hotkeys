@@ -59,13 +59,16 @@ AddHotstringSnippet(root, name, text, settings) {
             missing .= (missing = "" ? "" : ", ") command.Label
     }
     if missing != "" {
-        if size < 0
-            FileDelete(path)
-        else {
-            handle := FileOpen(path, "rw")
-            handle.Length := size
-            handle.Close()
-        }
+        try {
+            if size < 0
+                FileDelete(path)
+            else {
+                handle := FileOpen(path, "rw")
+                handle.Length := size
+                handle.Close()
+            }
+        } catch Error as problem
+            throw ValueError("Added.ahk keeps the new last line, which could not be removed (" problem.Message "). Remove it by hand: the picker would no longer load " missing ".")
         throw ValueError("Not saved: the picker would no longer load " missing "." (after.Errors.Length ? " " JoinLines(after.Errors, " ") : ""))
     }
     return {Path: path, Catalogue: after}

@@ -1162,6 +1162,12 @@ TestAddSnippet() {
         AssertEqual(palette.AddSnippet("lost", "Text", status), false, "Entry that would not load refused")
         AssertEqual(InStr(status.Text, "Not saved: the picker would no longer load lost."), 1, "Refusal names the snippet")
         AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:old::Earlier entry`n/*`n", "Refused append undone")
+        FileDelete(root "\snippets.local\Added.ahk")
+        FileAppend(":T:old::Earlier entry`n/*", root "\snippets.local\Added.ahk", "UTF-8")
+        AssertEqual(FileGetSize(root "\snippets.local\Added.ahk"), 27, "Fixture has a byte-order mark")
+        palette.AddSnippet("lost", "Text", status)
+        AssertEqual(FileGetSize(root "\snippets.local\Added.ahk"), 27, "Undo keeps the byte-order mark and drops the added line break")
+        AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:old::Earlier entry`n/*", "Undo restores the text")
 
         ; One bundled file and 99 local files: a new Added.ahk would push one past the 100-file limit.
         FileDelete(root "\snippets.local\Added.ahk")
