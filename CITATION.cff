@@ -10,7 +10,7 @@ version: 1.1.0
 date-released: 2026-11-18
 repository-code: "https://github.com/ryanduguid/au-accounting-hotkeys"
 url: "https://duguid.com.au/"
-license-url: "https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/LICENSE"
+license-url: "https://github.com/ryanduguid/au-accounting-hotkeys/blob/v1.1.0/LICENSE"
 keywords:
   - accounting
   - australia
