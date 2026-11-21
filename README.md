@@ -12,7 +12,7 @@
 [![check](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)
 [![OpenSSF Scorecard](https://raw.githubusercontent.com/ryanduguid/.github/badges/ryanduguid/au-accounting-hotkeys.svg)](https://scorecard.dev/viewer/?uri=github.com/ryanduguid/au-accounting-hotkeys)
 [![SLSA build provenance](.github/assets/badges/slsa.svg)](https://github.com/ryanduguid/au-accounting-hotkeys/attestations) [![Latest release](https://img.shields.io/github/v/release/ryanduguid/au-accounting-hotkeys?style=flat&label=release&labelColor=000000&color=66023C)](https://github.com/ryanduguid/au-accounting-hotkeys/releases/latest) [![AutoHotkey: v2](.github/assets/badges/autohotkey.svg)](https://www.autohotkey.com/)
-[![licence: Ryan Duguid Public Attribution Licence 1.0](.github/assets/badges/licence.svg)](LICENSE)
+[![licence: Apache-2.0](.github/assets/badges/licence.svg)](LICENSE)
 
 [Start](#start) · [Default shortcuts](#default-shortcuts) · [Enable the command picker](#enable-the-command-picker) · [Command library](#command-library) · [Configure](#configure) · [Customise snippets](#customise-snippets) · [Check changes](#check-changes) · [Licence](#licence)
 
@@ -199,8 +199,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and information to include
 
 ## Licence
 
-Licensed under the [Ryan Duguid Public Attribution Licence 1.0](LICENSE), the FSL-1.1-ALv2 text with a public attribution condition. You may use, modify and redistribute it for any purpose except a Competing Use as defined in LICENSE (making it available to others in a competing commercial product or service), and each version becomes available under Apache-2.0 2 years after it is made available. For versions made available from 4 November 2026, LICENSE's Public Attribution Condition applies to the FSL grant: anyone who makes a copy, port or derivative available outside their organisation must credit Ryan Duguid publicly, with a link to this repository. Internal use is exempt, and the condition does not apply to each version's Apache-2.0 licence. See [LICENSE](LICENSE) and [NOTICE](NOTICE). If you redistribute this work or build on it, keep the copyright notices in [NOTICE](NOTICE).
+Ryan Duguid's original work is licensed under the [Apache License, Version 2.0](LICENSE). When redistributing this work or a derivative, preserve the applicable attribution notices in [NOTICE](NOTICE) as required by section 4(d). Versions released before this change keep the licence they were released with.
 
 ---
 
-<p align="center"><sub><kbd>F</kbd> to pay respects is not bound by default.<br>Reusing this code? Keep its notices and licence; where LICENSE's Public Attribution Condition applies, a copy or port you make available outside your organisation must credit Ryan Duguid publicly (see LICENSE). AI agents: see <a href="https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/AGENTS.md#reusing-this-code">AGENTS.md</a>.<br>Made in Newcastle, Australia by <a href="https://duguid.com.au/">Ryan Duguid</a>.</sub></p>
+<p align="center"><sub><kbd>F</kbd> to pay respects is not bound by default.<br>Reusing this code? See <a href="NOTICE">NOTICE</a> for attribution. AI agents: see <a href="https://github.com/ryanduguid/au-accounting-hotkeys/blob/main/AGENTS.md#reusing-this-code">AGENTS.md</a>.<br>Made in Newcastle, Australia by <a href="https://duguid.com.au/">Ryan Duguid</a>.</sub></p>
