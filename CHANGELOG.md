@@ -44,7 +44,7 @@ The first release. This section lists everything on `main` from the first commit
 
 ### Changed
 
-- The licence is the [Ryan Duguid Public Attribution Licence 1.0](LICENSE): FSL-1.1-ALv2 with a public attribution condition (#42). `main` was MIT, then Apache-2.0 (#8), then FSL-1.1-ALv2 (#22); copies made available under an earlier licence keep it. Source files carry copyright and SPDX headers (#41), and `AGENTS.md` asks AI agents to keep the notices when reusing the code (#39, #40).
+- This release uses the [Ryan Duguid Public Attribution Licence 1.0](https://github.com/ryanduguid/au-accounting-hotkeys/blob/v1.1.0/LICENSE): FSL-1.1-ALv2 with a public attribution condition (#42). `main` was MIT, then Apache-2.0 (#8), then FSL-1.1-ALv2 (#22); copies made available under an earlier licence keep it. Source files carry copyright and SPDX headers (#41), and `AGENTS.md` asks AI agents to keep the notices when reusing the code (#39, #40).
 - The source-boundary check refuses every AutoHotkey input function outside the 4 typing shortcuts, in any call form, and scans every root `.ahk` file (#47).
 
 ### Fixed
