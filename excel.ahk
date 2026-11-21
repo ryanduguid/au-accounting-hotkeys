@@ -67,13 +67,20 @@ ActiveExcelSelection() {
     iid := Buffer(16)
     DllCall("ole32\CLSIDFromString", "Str", "{00020400-0000-0000-C000-000000000046}", "Ptr", iid, "HRESULT")
     DllCall("oleacc\AccessibleObjectFromWindow", "Ptr", grid, "UInt", 0xFFFFFFF0, "Ptr", iid, "Ptr*", &window := 0, "HRESULT")
-    return ComObjFromPtr(window).RangeSelection
+    return SelectedRange(ComObjFromPtr(window).Selection)
+}
+
+; RangeSelection would return the last cells selected even whilst a chart or shape is selected.
+SelectedRange(selection) {
+    if ComObjType(selection, "Name") != "Range"
+        throw ValueError("Select cells first; a chart or shape is selected.")
+    return selection
 }
 
 RunExcelCommand(command, *) {
     try message := command.Call(ActiveExcelSelection())
     catch Error as problem
-        message := "Formatting not applied. Finish editing the cell and check the sheet is not protected.`n" problem.Message
+        message := "Formatting not applied. Finish editing the cell, or check the sheet allows formatting.`n" problem.Message
     ToolTip(message)
     SetTimer(() => ToolTip(), -2500)
 }

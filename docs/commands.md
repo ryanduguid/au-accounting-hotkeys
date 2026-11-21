@@ -198,4 +198,4 @@ These shortcuts change the selected cells in the active Excel window instead of 
 | `ExcelColourCode` | Colours number constants blue and formulas black, the usual input and calculation convention. Text and empty cells keep their colour. |
 | `ExcelCentreAcross` | Toggles Center Across Selection, which centres a heading over the selected columns without merging cells, and General alignment. |
 
-A shortcut does nothing to a protected sheet or whilst a cell is being edited; the tooltip says so. It acts on the workbook window that is active, never on another open Excel instance.
+A shortcut changes nothing whilst a cell is being edited, whilst a chart or shape is selected, or on a protected sheet whose protection does not allow formatting cells; the tooltip says so. It acts on the workbook window that is active, never on another open Excel instance.

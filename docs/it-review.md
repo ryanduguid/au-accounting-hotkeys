@@ -42,9 +42,9 @@ Select-String -Path .\*.ahk -Pattern 'Download|ComObj|DllCall|\bRun(Wait)?\(|Reg
     ForEach-Object { '{0}:{1}: {2}' -f $_.Filename, $_.LineNumber, $_.Line.Trim() }
 ```
 
-On 22 November 2026 this prints 15 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk`, 5 `DllCall` lines (`GetWindow`, `CLSIDFromString` and `AccessibleObjectFromWindow` once each, `MultiByteToWideChar` twice) and one `ComObjFromPtr` in `excel.ahk`.
+On 22 November 2026 this prints 16 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk`, 5 `DllCall` lines (`GetWindow`, `CLSIDFromString` and `AccessibleObjectFromWindow` once each, `MultiByteToWideChar` twice) and one `ComObjFromPtr` and one `ComObjType` in `excel.ahk`.
 
-`tests\check-boundaries.ps1` needs only PowerShell. It fails if any root `.ahk` file other than `clipboard.ahk` touches the clipboard, if any file other than `accounting-hotkeys.ahk` types, clicks, pastes or sends window messages, or if that file does so other than with `SendText`, if the snippet loader writes a file, or if any file other than `excel.ahk` uses COM or that file does other than wrap the Excel window. Positive controls in the same script show that each rule catches what it claims to. Run it with:
+`tests\check-boundaries.ps1` needs only PowerShell. It fails if any root `.ahk` file other than `clipboard.ahk` touches the clipboard, if any file other than `accounting-hotkeys.ahk` types, clicks, pastes or sends window messages, or if that file does so other than with `SendText`, if the snippet loader writes a file, or if any file other than `excel.ahk` uses COM or that file does other than wrap the Excel window and check its selection. Positive controls in the same script show that each rule catches what it claims to. Run it with:
 
 ```powershell
 & .\tests\check-boundaries.ps1

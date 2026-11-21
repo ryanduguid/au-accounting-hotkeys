@@ -1146,6 +1146,8 @@ TestExcelFormatting() {
     commands["ExcelCentreAcross"].Call(range)
     AssertEqual(range.HorizontalAlignment, 7, "Mixed alignment centres")
 
+    AssertValueError(() => SelectedRange({NumberFormat: "General"}), "A selection that is not a Range is refused", "Select cells first; a chart or shape is selected.")
+
     colour := commands["ExcelColourCode"]
     numbers := {Font: {Color: -1}}, formulas := {Font: {Color: -1}}
     range := FakeCells(Map(2, numbers, -4123, formulas))

@@ -25,9 +25,9 @@ function Find-BoundaryViolations([string]$Name, [string]$Source) {
     if ($Source -match ('(?<![\w."''])(?:' + ($denied -join '|') + ')\b') -or
         $Source -match '\b(?:keybd_event|mouse_event|SendInput|PostMessage[AW]?|SendMessage[AW]?)\b' -or
         $Source -match '(?m)^[ \t]*:[^:\s]*:[^\r\n]*::') { 'Typing outside immediate hotkeys' }
-    # Only the Excel formatting shortcuts use COM, and only to wrap the active Excel window.
+    # Only the Excel formatting shortcuts use COM, and only to wrap the active Excel window and check its selection.
     if ($Name -ne 'excel.ahk' -and $Source -match '\b(?:ComObj\w*|ComValue|ComCall)\b') { 'COM outside the Excel formatting shortcuts' }
-    if ($Name -eq 'excel.ahk' -and $Source -match '\b(?:ComObj(?!FromPtr\b)\w*|ComValue|ComCall)\b') { 'Excel shortcuts create or attach other COM objects' }
+    if ($Name -eq 'excel.ahk' -and $Source -match '\b(?:ComObj(?!FromPtr\b|Type\b)\w*|ComValue|ComCall)\b') { 'Excel shortcuts create or attach other COM objects' }
     if ($Name -eq 'snippets.ahk' -and $Source -match '\b(?:FileAppend|FileCopy|FileDelete|FileMove|FileSetAttrib|FileSetTime|IniWrite|RawWrite)\s*\(') { 'Snippet loader writes data' }
 }
 
@@ -57,7 +57,7 @@ foreach ($vector in $vectors) {
 if (@(Find-BoundaryViolations 'clipboard.ahk' 'A_Clipboard := text').Count -ne 0) { throw 'Clipboard adapter control failed.' }
 if (@(Find-BoundaryViolations 'accounting-hotkeys.ahk' 'SendText(text)').Count -ne 0) { throw 'Typing shortcut control failed.' }
 if (@(Find-BoundaryViolations 'picker.ahk' 'button.OnEvent("Click", handler)').Count -ne 0) { throw 'Picker event control failed.' }
-if (@(Find-BoundaryViolations 'excel.ahk' 'return ComObjFromPtr(window).RangeSelection').Count -ne 0) { throw 'Excel window control failed.' }
+if (@(Find-BoundaryViolations 'excel.ahk' 'ComObjType(ComObjFromPtr(window).Selection, "Name")').Count -ne 0) { throw 'Excel window control failed.' }
 
 $root = Split-Path -Parent $PSScriptRoot
 $names = @(Get-ChildItem -LiteralPath $root -Filter '*.ahk' -File | ForEach-Object Name)
