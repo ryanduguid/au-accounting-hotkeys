@@ -11,7 +11,7 @@
 
 [![check](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/ryanduguid/au-accounting-hotkeys/actions/workflows/check.yml)
 [![OpenSSF Scorecard](https://raw.githubusercontent.com/ryanduguid/.github/badges/ryanduguid/au-accounting-hotkeys.svg)](https://scorecard.dev/viewer/?uri=github.com/ryanduguid/au-accounting-hotkeys)
-[![AutoHotkey: v2](.github/assets/badges/autohotkey.svg)](https://www.autohotkey.com/)
+[![SLSA build provenance](.github/assets/badges/slsa.svg)](https://github.com/ryanduguid/au-accounting-hotkeys/attestations) [![Latest release](https://img.shields.io/github/v/release/ryanduguid/au-accounting-hotkeys?style=flat&label=release&labelColor=000000&color=66023C)](https://github.com/ryanduguid/au-accounting-hotkeys/releases/latest) [![AutoHotkey: v2](.github/assets/badges/autohotkey.svg)](https://www.autohotkey.com/)
 [![licence: Ryan Duguid Public Attribution Licence 1.0](.github/assets/badges/licence.svg)](LICENSE)
 
 [Start](#start) · [Default shortcuts](#default-shortcuts) · [Enable the command picker](#enable-the-command-picker) · [Command library](#command-library) · [Configure](#configure) · [Customise snippets](#customise-snippets) · [Check changes](#check-changes) · [Licence](#licence)
