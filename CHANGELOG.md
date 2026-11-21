@@ -4,6 +4,10 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
+### Added
+
+- 6 opt-in Excel formatting shortcuts, each off until given a key under `[Hotkeys]` and active only in `EXCEL.EXE`: accounting number formats with negatives in brackets, thousands, percentages, a date-format cycle starting with `dd/mm/yyyy`, blue inputs and black formulas, and Center Across Selection. They act on the active workbook window through COM; Excel cannot undo them.
+
 ### Changed
 
 - Relicensed Ryan Duguid's original work under Apache-2.0. Earlier releases keep their original terms.

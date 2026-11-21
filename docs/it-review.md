@@ -5,8 +5,8 @@ This page states what the script reads, types and stores, and how to check each 
 ## What runs
 
 - Plain-text AutoHotkey v2 source. There is no compiled executable, installer, service, scheduled task or startup entry; the script runs only when someone opens `accounting-hotkeys.ahk` and stops when they choose **Exit** from its tray menu.
-- It makes no network connection. No source file calls `Download`, a COM object or a network API.
-- It calls 2 Windows functions directly: `MultiByteToWideChar` to decode snippet files as UTF-8 (`snippets.ahk`) and `GetWindow` to tell whether a dialog belongs to the picker (`accounting-hotkeys.ahk`).
+- It makes no network connection. No source file calls `Download` or a network API. Only the Excel formatting shortcuts use COM, and only to reach the active Excel window's own object (`excel.ahk`).
+- It calls 4 Windows functions directly: `MultiByteToWideChar` to decode snippet files as UTF-8 (`snippets.ahk`), `GetWindow` to tell whether a dialog belongs to the picker (`accounting-hotkeys.ahk`), and `CLSIDFromString` and `AccessibleObjectFromWindow` to reach the active Excel window (`excel.ahk`).
 - It starts one other program: **Open settings** in its tray menu opens `config.ini` in Notepad.
 
 ## What it reads
@@ -20,6 +20,10 @@ This page states what the script reads, types and stores, and how to check each 
 ## What it types
 
 Only the 4 shortcuts type, and only into the active window: the selected financial-year end, today's date, the selected quarter end and the financial-year label (`RegisterHotkeysCore`). Each types a date or label the script computes; none types clipboard or snippet text. The picker never types: its result goes to the clipboard, and the user pastes it.
+
+## What it changes in Excel
+
+The 6 Excel formatting shortcuts are off until a key is set for each in `config.ini`. When one is pressed whilst `EXCEL.EXE` is active, it sets the number format, font colour or horizontal alignment of the selected cells in the active workbook window (`ExcelCommands`, `ActiveExcelSelection`). They change no cell values, formulas or other workbooks, and Excel cannot undo them.
 
 ## What it stores
 
@@ -38,9 +42,9 @@ Select-String -Path .\*.ahk -Pattern 'Download|ComObj|DllCall|\bRun(Wait)?\(|Reg
     ForEach-Object { '{0}:{1}: {2}' -f $_.Filename, $_.LineNumber, $_.Line.Trim() }
 ```
 
-At `main` on 13 November 2026 this prints 12 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk` and 3 `DllCall` lines (`GetWindow` once, `MultiByteToWideChar` twice).
+On 22 November 2026 this prints 16 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk`, 5 `DllCall` lines (`GetWindow`, `CLSIDFromString` and `AccessibleObjectFromWindow` once each, `MultiByteToWideChar` twice) and one `ComObjFromPtr` and one `ComObjType` in `excel.ahk`.
 
-`tests\check-boundaries.ps1` needs only PowerShell. It fails if any root `.ahk` file other than `clipboard.ahk` touches the clipboard, if any file other than `accounting-hotkeys.ahk` types, clicks, pastes or sends window messages, or if that file does so other than with `SendText`, or if the snippet loader writes a file. Positive controls in the same script show that each rule catches what it claims to. Run it with:
+`tests\check-boundaries.ps1` needs only PowerShell. It fails if any root `.ahk` file other than `clipboard.ahk` touches the clipboard, if any file other than `accounting-hotkeys.ahk` types, clicks, pastes or sends window messages, or if that file does so other than with `SendText`, if the snippet loader writes a file, or if any file other than `excel.ahk` uses COM or that file does other than wrap the Excel window and check its selection. Positive controls in the same script show that each rule catches what it claims to. Run it with:
 
 ```powershell
 & .\tests\check-boundaries.ps1

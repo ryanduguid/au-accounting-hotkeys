@@ -20,6 +20,7 @@ TestExpanded() {
     TestSnippetLimits()
     TestPickerState()
     TestPickerHolidayState()
+    TestExcelFormatting()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
     AssertEqual(SettingsWith([["Hotkeys", "Picker", "!^Space"]]).Keys["Picker"], "^!Space", "Picker mapping normalised")
     AssertValueError(() => SettingsWith([["Hotkeys", "Picker", "Ins"]]), "Picker alias conflict rejected")
@@ -1105,4 +1106,73 @@ TestPickerTargetBoundary() {
         palette.Close()
         target.Destroy()
     }
+}
+
+; Excel formatting runs against stand-ins for a Range; a desktop run in Excel is still needed.
+TestExcelFormatting() {
+    commands := ExcelCommands()
+    AssertEqual(commands.Count, 6, "Six Excel formatting commands")
+    for name in commands
+        AssertEqual(SettingDefaults()["Hotkeys"][name], "", "Excel command " name " off by default")
+    AssertEqual(SettingsWith([["Hotkeys", "ExcelDates", "+!^d"]]).Keys["ExcelDates"], "^!+d", "Excel mapping normalised")
+    AssertValueError(() => SettingsWith([["Hotkeys", "ExcelAccounting", "^!d"]]), "Excel mapping conflict rejected", "Hotkey ^!d is assigned to both ExcelAccounting and Today.")
+
+    whole := '#,##0_);(#,##0);"-"_)', cents := '#,##0.00_);(#,##0.00);"-"_)', thousands := '#,##0,_);(#,##0,);"-"_)'
+    for test in [
+        ["ExcelAccounting", [whole, cents, whole]],
+        ["ExcelThousands", [thousands, whole, thousands]],
+        ["ExcelPercent", ['0.0%_);(0.0%);"-"_)', '0.00%_);(0.00%);"-"_)', '0.0%_);(0.0%);"-"_)']],
+        ["ExcelDates", ["dd/mm/yyyy", "d mmm yyyy", "mmm-yy", "yyyy-mm-dd", "dd/mm/yyyy"]]
+    ] {
+        range := {NumberFormat: "General"}
+        for expected in test[2] {
+            AssertEqual(commands[test[1]].Call(range), "Number format " expected, test[1] " reports step " A_Index)
+            AssertEqual(range.NumberFormat, expected, test[1] " step " A_Index)
+        }
+    }
+    range := {NumberFormat: '#,##0_);(#,##0);\-_)'}
+    commands["ExcelAccounting"].Call(range)
+    AssertEqual(range.NumberFormat, cents, "Cycle reads Excel's escaped spelling of a format")
+    range.NumberFormat := ComValue(1, 0)
+    commands["ExcelDates"].Call(range)
+    AssertEqual(range.NumberFormat, "dd/mm/yyyy", "Mixed selection starts the cycle")
+
+    range := {HorizontalAlignment: 1}
+    AssertEqual(commands["ExcelCentreAcross"].Call(range), "Centred across selection", "Centre across reported")
+    AssertEqual(range.HorizontalAlignment, 7, "Centre across selection applied")
+    commands["ExcelCentreAcross"].Call(range)
+    AssertEqual(range.HorizontalAlignment, 1, "Centre across toggles back to general")
+    range.HorizontalAlignment := ComValue(1, 0)
+    commands["ExcelCentreAcross"].Call(range)
+    AssertEqual(range.HorizontalAlignment, 7, "Mixed alignment centres")
+
+    AssertValueError(() => SelectedRange({NumberFormat: "General"}), "A selection that is not a Range is refused", "Select cells first; a chart or shape is selected.")
+
+    colour := commands["ExcelColourCode"]
+    numbers := {Font: {Color: -1}}, formulas := {Font: {Color: -1}}
+    range := FakeCells(Map(2, numbers, -4123, formulas))
+    AssertEqual(colour.Call(range), "Inputs blue, formulas black", "Colour coding reported")
+    AssertEqual(numbers.Font.Color, 0xFF0000, "Number constants blue")
+    AssertEqual(formulas.Font.Color, 0, "Formulas black")
+    AssertEqual(JoinLines(range.Calls, ";"), "2,1;-4123,23", "Only number constants and formulas searched")
+    numbers.Font.Color := -1
+    colour.Call(FakeCells(Map(2, numbers)))
+    AssertEqual(numbers.Font.Color, 0xFF0000, "Inputs coloured when no formula is selected")
+    AssertEqual(colour.Call(FakeCells(Map())), "No numbers or formulas in the selection.", "Empty selection reported")
+    for test in [[true, "", 0], [false, 125.5, 0xFF0000], [false, "Davis & Main", -1]] {
+        cell := {CountLarge: 1, HasFormula: test[1], Value2: test[2], Font: {Color: -1}}
+        cell.DefineProp("SpecialCells", {Call: (*) => NoCellsFound()})
+        colour.Call(cell)
+        AssertEqual(cell.Font.Color, test[3], "Single cell colour " A_Index)
+    }
+}
+
+FakeCells(found) {
+    range := {CountLarge: 12, Calls: []}
+    range.DefineProp("SpecialCells", {Call: (this, kind, value) => (this.Calls.Push(kind "," value), found.Has(kind) ? found[kind] : NoCellsFound())})
+    return range
+}
+
+NoCellsFound() {
+    throw Error("No cells were found.")
 }
