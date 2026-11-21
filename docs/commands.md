@@ -1,6 +1,6 @@
 # Command catalogue
 
-Commands copy reviewed text through the picker. The four default date hotkeys also type their results directly. Examples below use a financial year ending in 2026, Q4 and, for current-date commands, a fixed example clock of 6 October 2026.
+Commands copy reviewed text through the picker. The four default date hotkeys also type their results directly, and the opt-in [Excel formatting shortcuts](#excel-formatting-shortcuts) format the selected cells. Examples below use a financial year ending in 2026, Q4 and, for current-date commands, a fixed example clock of 6 October 2026.
 
 Search uses literal, case-insensitive terms across the identifier, label and category. Every term must match. Search accepts up to 128 UTF-16 code units. Selecting an input command clears previously loaded text; it requires a new explicit load or manual input.
 
@@ -184,3 +184,18 @@ Filename preparation returns one component as text. It does not inspect paths, c
 The 12 bundled drafts cover year-end and quarter records requests, bank reconciliation, receivables, payables, GST, payroll, fixed assets, loans, journal support, transaction queries and a review-query register. Each contains fields to complete. Review the selected period, wording and evidence before using it.
 
 See [custom snippets](../README.md#customise-snippets) for the token list, local folder and limits. Snippets have no script or plug-in execution facility.
+
+## Excel formatting shortcuts
+
+These shortcuts change the selected cells in the active Excel window instead of copying text. Each is off until you give it a key under `[Hotkeys]` in `config.ini`, works only when `EXCEL.EXE` is active (and in the `[Scope]` list, if set) and shows what it applied in a tooltip. Excel cannot undo these changes, so try them on a copy first. Pressing a cycling shortcut again moves to the next format; a selection whose format is not in the cycle starts at the first.
+
+| Setting | Behaviour |
+| --- | --- |
+| `ExcelAccounting` | Cycles whole-dollar and cents number formats with negatives in brackets and zero as a dash: `#,##0_);(#,##0);"-"_)`, then `#,##0.00_);(#,##0.00);"-"_)`. |
+| `ExcelThousands` | Toggles amounts shown in thousands, `#,##0,_);(#,##0,);"-"_)`, and the whole-dollar format. The cell keeps its full value. |
+| `ExcelPercent` | Cycles percentages to 1 and 2 decimal places, negatives in brackets and zero as a dash. |
+| `ExcelDates` | Cycles `dd/mm/yyyy`, `d mmm yyyy`, `mmm-yy` and `yyyy-mm-dd`. |
+| `ExcelColourCode` | Colours number constants blue and formulas black, the usual input and calculation convention. Text and empty cells keep their colour. |
+| `ExcelCentreAcross` | Toggles Center Across Selection, which centres a heading over the selected columns without merging cells, and General alignment. |
+
+A shortcut does nothing to a protected sheet or whilst a cell is being edited; the tooltip says so. It acts on the workbook window that is active, never on another open Excel instance.
