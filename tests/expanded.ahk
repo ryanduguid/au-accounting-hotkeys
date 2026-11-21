@@ -1145,17 +1145,32 @@ TestAddSnippet() {
         ] {
             AssertEqual(palette.AddSnippet(test[1], test[2], status), false, "Snippet refused " A_Index)
             AssertEqual(status.Text, test[3], "Refusal reason " A_Index)
+            AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), before, "Refusal leaves Added.ahk unchanged " A_Index)
         }
-        AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), before, "Refusals leave Added.ahk unchanged")
+        ; A label saved by another program after the picker opened is still a duplicate.
+        FileAppend("Kind regards", root "\snippets.local\Sign-off.txt", "UTF-8-RAW")
+        AssertEqual(palette.AddSnippet("SIGN-OFF", "Other", status), false, "Snippet added elsewhere is a duplicate")
+        FileDelete(root "\snippets.local\Sign-off.txt")
+
         FileDelete(root "\snippets.local\Added.ahk")
         FileAppend(":T:old::Earlier entry", root "\snippets.local\Added.ahk", "UTF-8-RAW")
         palette.AddSnippet("new", "Later entry", status)
         AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:old::Earlier entry`n:T:new::Later entry`n", "Entry starts on a new line")
+        ; The new line would fall inside the unclosed comment, so it would never load.
         FileDelete(root "\snippets.local\Added.ahk")
-        Loop 100
+        FileAppend(":T:old::Earlier entry`n/*`n", root "\snippets.local\Added.ahk", "UTF-8-RAW")
+        AssertEqual(palette.AddSnippet("lost", "Text", status), false, "Entry that would not load refused")
+        AssertEqual(InStr(status.Text, "Not saved: the picker would no longer load lost."), 1, "Refusal names the snippet")
+        AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:old::Earlier entry`n/*`n", "Refused append undone")
+
+        ; One bundled file and 99 local files: a new Added.ahk would push one past the 100-file limit.
+        FileDelete(root "\snippets.local\Added.ahk")
+        Loop 99
             FileAppend("Snippet " A_Index, root "\snippets.local\Full-" A_Index ".txt", "UTF-8-RAW")
-        AssertEqual(palette.AddSnippet("more", "Text", status), false, "Full snippets.local refused")
-        AssertEqual(FileExist(root "\snippets.local\Added.ahk"), "", "Full snippets.local not changed")
+        AssertEqual(palette.AddSnippet("more", "Text", status), false, "Save that would drop a snippet refused")
+        AssertEqual(InStr(status.Text, "Not saved: the picker would no longer load "), 1, "Dropped snippet reported")
+        AssertEqual(FileExist(root "\snippets.local\Added.ahk"), "", "Created file removed again")
+        AssertEqual(LoadCommandCatalogue(palette.Settings, root).Commands.Length, BuiltinCommands().Length + 100, "Library still loads every snippet")
     } finally {
         palette.Close()
         DirDelete(root, true)

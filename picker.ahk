@@ -18,40 +18,57 @@ HotstringEntry(name, text) {
     return ":T:" name "::" StrReplace(parts[1], " ", "``s") parts[2] StrReplace(parts[3], " ", "``s")
 }
 
-; Appends a snippet to snippets.local\Added.ahk. Refuses a label already in the catalogue and
-; anything the loader would not read back exactly.
-AddHotstringSnippet(directory, name, text, commands) {
+; Appends a snippet to snippets.local\Added.ahk and returns the reloaded catalogue. Refuses a label
+; already loaded and text the loader would not read back exactly. If the loader would then miss the
+; new snippet or one it loaded before (its file, size or count limits), the append is undone.
+AddHotstringSnippet(root, name, text, settings) {
     if !RegExMatch(name, "^[!-~]{1,40}\z")
         throw ValueError("Use a trigger of 1 to 40 ASCII letters, digits or symbols, without spaces.")
     text := CheckedText(NormaliseLineEndings(text), 16384)
     if InStr(text, "{{") || InStr(text, "}}")
         throw ValueError("Text must not contain {{ or }}. For date tokens or fields, add a .txt snippet instead.")
-    for command in commands {
-        if command.Id = "Snippet:" name
-            throw ValueError("A snippet labelled " name " already exists.")
-    }
     line := HotstringEntry(name, text)
     parsed := SnippetsFromHotstrings(line)
     if parsed.Items.Length != 1 || parsed.Items[1].Name !== name || parsed.Items[1].Body !== text
         throw ValueError("This text cannot be stored exactly in Added.ahk.")
-    path := directory "\Added.ahk"
+    before := LoadCommandCatalogue(settings, root).Commands
+    for command in before {
+        if command.Id = "Snippet:" name
+            throw ValueError("A snippet labelled " name " already exists.")
+    }
+    directory := root "\snippets.local", path := directory "\Added.ahk"
     if !DirExist(directory)
         DirCreate(directory)
     if InStr(FileGetAttrib(directory), "L") || FileExist(path) && InStr(FileGetAttrib(path), "L")
         throw ValueError("Linked snippet folders and files are not changed.")
-    existing := FileExist(path) && FileGetSize(path) ? ReadUtf8Snippet(path, 65536) : ""
-    if existing = "" {
-        files := 0
-        Loop Files directory "\*.*", "F"
-            files += A_LoopFileExt = "txt" || A_LoopFileExt = "ahk"
-        if files >= 100
-            throw ValueError("snippets.local already holds 100 snippet files.")
+    size := FileExist(path) ? FileGetSize(path) : -1
+    if size > 0 {
+        handle := FileOpen(path, "r")
+        handle.Pos := size - 1
+        line := (handle.ReadUChar() = 10 ? "" : "`n") line
+        handle.Close()
     }
-    line := (existing = "" || SubStr(existing, -1) = "`n" ? "" : "`n") line "`n"
-    if StrPut(existing line, "UTF-8") - 1 > 65536
-        throw ValueError("Added.ahk would exceed 65,536 bytes.")
-    FileAppend(line, path, "UTF-8-RAW")
-    return path
+    FileAppend(line "`n", path, "UTF-8-RAW")
+    after := LoadCommandCatalogue(settings, root)
+    loaded := Map()
+    for command in after.Commands
+        loaded[command.Id] := true
+    missing := loaded.Has("Snippet:" name) ? "" : name
+    for command in before {
+        if !loaded.Has(command.Id)
+            missing .= (missing = "" ? "" : ", ") command.Label
+    }
+    if missing != "" {
+        if size < 0
+            FileDelete(path)
+        else {
+            handle := FileOpen(path, "rw")
+            handle.Length := size
+            handle.Close()
+        }
+        throw ValueError("Not saved: the picker would no longer load " missing "." (after.Errors.Length ? " " JoinLines(after.Errors, " ") : ""))
+    }
+    return {Path: path, Catalogue: after}
 }
 
 class CommandPicker {
@@ -254,24 +271,22 @@ class CommandPicker {
 
     ; Saves the snippet, reloads the catalogue and selects the new entry. Errors go to status.
     AddSnippet(name, text, status) {
-        try path := AddHotstringSnippet(this.Root "\snippets.local", name, text, this.Commands)
+        try saved := AddHotstringSnippet(this.Root, name, text, this.Settings)
         catch Error as problem {
             status.Text := problem.Message
             return false
         }
-        loaded := LoadCommandCatalogue(this.Settings, this.Root)
-        this.Commands := loaded.Commands
+        this.Commands := saved.Catalogue.Commands
         this.Search.Value := ""
         this.RefreshList()
         for item in this.Rows {
             if item.Id == "Snippet:" name {
                 this.List.Modify(A_Index, "Select Focus Vis")
                 this.SelectRow(A_Index)
-                this.Status.Text := "Added " name " to " path "."
-                return true
+                break
             }
         }
-        this.Status.Text := "Saved " name " to " path ", but it did not load: " JoinLines(loaded.Errors, " ")
+        this.Status.Text := "Added " name " to " saved.Path "."
         return true
     }
 

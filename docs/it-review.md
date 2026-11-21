@@ -28,7 +28,7 @@ The 6 Excel formatting shortcuts are off until a key is set for each in `config.
 ## What it stores
 
 - On the first run, it copies `config.example.ini` to `config.ini` beside the script. It never writes to `config.ini` afterwards; users edit it themselves.
-- **Add snippet** in the picker, when the user chooses **Save**, appends one line to `snippets.local\Added.ahk` beside the script, creating the folder and file if needed. It refuses a linked folder or file, a full folder and a file that would exceed 65,536 bytes (`AddHotstringSnippet`).
+- **Add snippet** in the picker, when the user chooses **Save**, appends one line to `snippets.local\Added.ahk` beside the script, creating the folder and file if needed. It refuses a linked folder or file; NTFS hard links are not detected. If the picker would then fail to load the new snippet or one it loaded before, it truncates the file to its earlier length, or deletes a file it created (`AddHotstringSnippet`).
 - **Copy result** in the picker replaces the clipboard with the previewed text. Windows clipboard history, clipboard synchronisation and remote-desktop clipboard sharing may keep that text, under the firm's own settings.
 - Nothing else: no log, registry entry, temporary file or telemetry.
 
@@ -43,7 +43,7 @@ Select-String -Path .\*.ahk -Pattern 'Download|ComObj|DllCall|\bRun(Wait)?\(|Reg
     ForEach-Object { '{0}:{1}: {2}' -f $_.Filename, $_.LineNumber, $_.Line.Trim() }
 ```
 
-On 22 November 2026 this prints 18 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, one `DirCreate` and one `FileAppend` in `picker.ahk` for **Add snippet**, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk`, 5 `DllCall` lines (`GetWindow`, `CLSIDFromString` and `AccessibleObjectFromWindow` once each, `MultiByteToWideChar` twice) and one `ComObjFromPtr` and one `ComObjType` in `excel.ahk`.
+On 22 November 2026 this prints 19 lines: one `FileCopy` and one `Run` (Notepad) in `accounting-hotkeys.ahk`, one `DirCreate`, one `FileAppend` and one `FileDelete` in `picker.ahk` for **Add snippet**, the 4 `SendText` shortcuts, 3 `A_Clipboard` lines in `clipboard.ahk`, 5 `DllCall` lines (`GetWindow`, `CLSIDFromString` and `AccessibleObjectFromWindow` once each, `MultiByteToWideChar` twice) and one `ComObjFromPtr` and one `ComObjType` in `excel.ahk`.
 
 `tests\check-boundaries.ps1` needs only PowerShell. It fails if any root `.ahk` file other than `clipboard.ahk` touches the clipboard, if any file other than `accounting-hotkeys.ahk` types, clicks, pastes or sends window messages, or if that file does so other than with `SendText`, if the snippet loader writes a file, or if any file other than `excel.ahk` uses COM or that file does other than wrap the Excel window and check its selection. Positive controls in the same script show that each rule catches what it claims to. Run it with:
 
