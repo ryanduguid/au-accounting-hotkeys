@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include %A_LineFile%\..\picker.ahk
+#Include %A_LineFile%\..\excel.ahk
 
 if A_LineFile = A_ScriptFullPath {
     try StartHotkeys()
@@ -74,7 +75,8 @@ SettingDefaults() {
         "Period", ["FinancialYearEnding", "2026", "Quarter", "4"],
         "Scope", ["Applications", ""],
         "Holidays", ["State", ""],
-        "Hotkeys", ["YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", ""]
+        "Hotkeys", ["YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", "",
+            "ExcelAccounting", "", "ExcelThousands", "", "ExcelPercent", "", "ExcelDates", "", "ExcelColourCode", "", "ExcelCentreAcross", ""]
     ) {
         values := Map()
         values.CaseSense := "Off"
@@ -142,11 +144,18 @@ RegisterHotkeysCore(settings, openPicker) {
         "FinancialYear", (*) => SendText(FinancialYearLabel(settings.Year)),
         "Picker", (*) => openPicker.Call(settings)
     )
-    HotIf((*) => IsAllowedApplication(settings.Applications))
+    excel := ExcelCommands()
     try {
+        HotIf((*) => IsAllowedApplication(settings.Applications))
         for command, key in settings.Keys {
-            if key != ""
+            if key != "" && commands.Has(command)
                 Hotkey(key, commands[command], "On")
+        }
+        ; Formatting acts on the active Excel window, so those shortcuts work only there.
+        HotIf((*) => WinActive("ahk_exe EXCEL.EXE") && IsAllowedApplication(settings.Applications))
+        for command, key in settings.Keys {
+            if key != "" && excel.Has(command)
+                Hotkey(key, RunExcelCommand.Bind(excel[command]), "On")
         }
     } finally HotIf()
 }

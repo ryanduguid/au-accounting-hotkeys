@@ -7,6 +7,7 @@ All notable changes to this repository are recorded here. The format follows [Ke
 ### Added
 
 - **Add snippet** in the picker: type a trigger and text, and the picker appends them to `snippets.local\Added.ahk` as an escaped AutoHotkey hotstring, reloads and selects the new snippet. A trigger already in use, ignoring case, is refused.
+- 6 opt-in Excel formatting shortcuts, each off until given a key under `[Hotkeys]` and active only in `EXCEL.EXE`: accounting number formats with negatives in brackets, thousands, percentages, a date-format cycle starting with `dd/mm/yyyy`, blue inputs and black formulas, and Center Across Selection. They act on the active workbook window through COM; Excel cannot undo them.
 
 ### Changed
 
