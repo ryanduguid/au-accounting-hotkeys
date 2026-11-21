@@ -6,6 +6,74 @@ ConfirmFormulaCopy() {
     return MsgBox("Some output cells begin with =, +, - or @. A spreadsheet may interpret them as formulas.`n`nCopy the exact preview?", "Check spreadsheet text", "YesNo Icon!") = "Yes"
 }
 
+; A :T: entry, which types its text literally, that SnippetsFromHotstrings reads back unchanged.
+HotstringEntry(name, text) {
+    static escapes := [["``", "````"], [":", "``:"], [";", "``;"], ["`n", "``n"], ["`t", "``t"]]
+    for pair in escapes {
+        name := StrReplace(name, pair[1], pair[2])
+        text := StrReplace(text, pair[1], pair[2])
+    }
+    ; Spaces at either end would be trimmed when the line is read.
+    RegExMatch(text, "^( *)(.*?)( *)\z", &parts)
+    return ":T:" name "::" StrReplace(parts[1], " ", "``s") parts[2] StrReplace(parts[3], " ", "``s")
+}
+
+; Appends a snippet to snippets.local\Added.ahk and returns the reloaded catalogue. Refuses a label
+; already loaded and text the loader would not read back exactly. If the loader would then miss the
+; new snippet or one it loaded before (its file, size or count limits), the append is undone.
+AddHotstringSnippet(root, name, text, settings) {
+    if !RegExMatch(name, "^[!-~]{1,40}\z")
+        throw ValueError("Use a trigger of 1 to 40 ASCII letters, digits or symbols, without spaces.")
+    text := CheckedText(NormaliseLineEndings(text), 16384)
+    if InStr(text, "{{") || InStr(text, "}}")
+        throw ValueError("Text must not contain {{ or }}. For date tokens or fields, add a .txt snippet instead.")
+    line := HotstringEntry(name, text)
+    parsed := SnippetsFromHotstrings(line)
+    if parsed.Items.Length != 1 || parsed.Items[1].Name !== name || parsed.Items[1].Body !== text
+        throw ValueError("This text cannot be stored exactly in Added.ahk.")
+    before := LoadCommandCatalogue(settings, root).Commands
+    for command in before {
+        if command.Id = "Snippet:" name
+            throw ValueError("A snippet labelled " name " already exists.")
+    }
+    directory := root "\snippets.local", path := directory "\Added.ahk"
+    if !DirExist(directory)
+        DirCreate(directory)
+    if InStr(FileGetAttrib(directory), "L") || FileExist(path) && InStr(FileGetAttrib(path), "L")
+        throw ValueError("Linked snippet folders and files are not changed.")
+    size := FileExist(path) ? FileGetSize(path) : -1
+    if size > 0 {
+        handle := FileOpen(path, "r")
+        handle.Pos := size - 1
+        line := (handle.ReadUChar() = 10 ? "" : "`n") line
+        handle.Close()
+    }
+    FileAppend(line "`n", path, "UTF-8-RAW")
+    after := LoadCommandCatalogue(settings, root)
+    loaded := Map()
+    for command in after.Commands
+        loaded[command.Id] := true
+    missing := loaded.Has("Snippet:" name) ? "" : name
+    for command in before {
+        if !loaded.Has(command.Id)
+            missing .= (missing = "" ? "" : ", ") command.Label
+    }
+    if missing != "" {
+        try {
+            if size < 0
+                FileDelete(path)
+            else {
+                handle := FileOpen(path, "rw")
+                handle.Length := size
+                handle.Close()
+            }
+        } catch Error as problem
+            throw ValueError("Added.ahk keeps the new last line, which could not be removed (" problem.Message "). Remove it by hand: the picker would no longer load " missing ".")
+        throw ValueError("Not saved: the picker would no longer load " missing "." (after.Errors.Length ? " " JoinLines(after.Errors, " ") : ""))
+    }
+    return {Path: path, Catalogue: after}
+}
+
 class CommandPicker {
     static ActiveHwnd := 0
 
@@ -17,6 +85,8 @@ class CommandPicker {
         loaded := IsObject(catalogue) ? {Commands: catalogue, Errors: []} : LoadCommandCatalogue(settings)
         this.Commands := loaded.Commands
         this.LoadErrors := loaded.Errors
+        SplitPath(A_LineFile, , &root)
+        this.Root := root
         this.Output := ""
         this.SelectedId := ""
         this.Updating := false
@@ -36,6 +106,7 @@ class CommandPicker {
         this.Status := this.Window.AddText("xm w720 r2", "")
         this.CopyButton := this.Window.AddButton("xm w150 Disabled", "&Copy result")
         this.Window.AddButton("x+10 w100", "Close").OnEvent("Click", (*) => this.Close())
+        this.Window.AddButton("x+10 w130", "&Add snippet...").OnEvent("Click", (*) => this.OpenAddSnippet())
         this.Search.OnEvent("Change", (*) => this.RefreshList())
         this.List.OnEvent("ItemSelect", (control, row, selected) => selected ? this.SelectRow(row) : 0)
         this.Input.OnEvent("Change", (*) => this.InputChanged())
@@ -185,6 +256,41 @@ class CommandPicker {
             this.Status.Text := "Copy failed: " problem.Message
             return false
         }
+    }
+
+    OpenAddSnippet() {
+        dialog := Gui("+Owner" this.Window.Hwnd, "Add snippet")
+        dialog.SetFont("s10", "Segoe UI")
+        dialog.AddText("w480", "&Trigger: the label in the picker, 1 to 40 characters without spaces")
+        trigger := dialog.AddEdit("w480 Limit40")
+        dialog.AddText("w480", "&Text, saved as typed")
+        body := dialog.AddEdit("w480 r8 Limit16384")
+        status := dialog.AddText("w480 r2", "Saved to snippets.local\Added.ahk in AutoHotkey hotstrings format.")
+        dialog.AddButton("w100", "&Save").OnEvent("Click", (*) => this.AddSnippet(trigger.Value, body.Value, status) && dialog.Destroy())
+        dialog.AddButton("x+10 w100", "Cancel").OnEvent("Click", (*) => dialog.Destroy())
+        dialog.OnEvent("Escape", (*) => dialog.Destroy())
+        dialog.Show()
+    }
+
+    ; Saves the snippet, reloads the catalogue and selects the new entry. Errors go to status.
+    AddSnippet(name, text, status) {
+        try saved := AddHotstringSnippet(this.Root, name, text, this.Settings)
+        catch Error as problem {
+            status.Text := problem.Message
+            return false
+        }
+        this.Commands := saved.Catalogue.Commands
+        this.Search.Value := ""
+        this.RefreshList()
+        for item in this.Rows {
+            if item.Id == "Snippet:" name {
+                this.List.Modify(A_Index, "Select Focus Vis")
+                this.SelectRow(A_Index)
+                break
+            }
+        }
+        this.Status.Text := "Added " name " to " saved.Path "."
+        return true
     }
 
     Close() {
