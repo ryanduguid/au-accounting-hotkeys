@@ -5,6 +5,11 @@ ValidateYear(year) {
         throw ValueError("FinancialYearEnding must be a four-digit year from 1900 to 9999.")
 }
 
+ValidateQuarter(quarter) {
+    if !RegExMatch(quarter, "^[1-4]\z")
+        throw ValueError("Quarter must be 1, 2, 3 or 4.")
+}
+
 FinancialYearEnd(year) {
     ValidateYear(year)
     return "30/06/" year
@@ -17,8 +22,7 @@ FinancialYearLabel(year) {
 
 QuarterEnd(year, quarter) {
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]\z")
-        throw ValueError("Quarter must be 1, 2, 3 or 4.")
+    ValidateQuarter(quarter)
     return ["30/09/", "31/12/", "31/03/", "30/06/"][quarter] (quarter <= 2 ? year - 1 : year)
 }
 
@@ -37,8 +41,7 @@ FinancialYearRange(year) {
 
 QuarterStart(year, quarter) {
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]\z")
-        throw ValueError("Quarter must be 1, 2, 3 or 4.")
+    ValidateQuarter(quarter)
     return ["01/07/", "01/10/", "01/01/", "01/04/"][quarter] (quarter <= 2 ? year - 1 : year)
 }
 
@@ -82,10 +85,8 @@ ParseStrictDate(text) {
     text := Trim(text, " `t`r`n")
     if RegExMatch(text, "^([0-9]{2})/([0-9]{2})/([0-9]{4})\z", &parts)
         date := {Year: Integer(parts[3]), Month: Integer(parts[2]), Day: Integer(parts[1])}
-    else if RegExMatch(text, "^([0-9]{4})-([0-9]{2})-([0-9]{2})\z", &parts)
-        date := {Year: Integer(parts[1]), Month: Integer(parts[2]), Day: Integer(parts[3])}
-    else if RegExMatch(text, "^([0-9]{4})([0-9]{2})([0-9]{2})\z", &parts)
-        date := {Year: Integer(parts[1]), Month: Integer(parts[2]), Day: Integer(parts[3])}
+    else if RegExMatch(text, "^([0-9]{4})(-?)([0-9]{2})\2([0-9]{2})\z", &parts)
+        date := {Year: Integer(parts[1]), Month: Integer(parts[3]), Day: Integer(parts[4])}
     else
         throw ValueError("Use dd/MM/yyyy, yyyy-MM-dd or yyyyMMdd with a four-digit year.")
     CalendarDate(date.Year, date.Month, date.Day)

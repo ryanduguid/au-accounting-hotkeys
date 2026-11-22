@@ -169,44 +169,21 @@ Supported date tokens are `{{TODAY_AU}}`, `{{TODAY_ISO}}`, `{{FILE_DATE}}`, `{{F
 
 A field such as `{{ASK:Client name}}` asks for text when you choose the snippet. The picker previews the draft with `[Client name]` in place of each field and lists the fields; type one answer per line, in that order, and the preview shows the completed text to copy. A label used twice asks once. A snippet may ask for up to 10 fields. Labels start with an ASCII letter or digit, have up to 40 ASCII letters, digits, spaces, underscores or hyphens and are case sensitive. Each answer has 1 to 200 characters on one line; spaces and tabs around it are removed, and the rest is inserted once, so a token in an answer stays text.
 
-A choice field such as `{{PICK:Basis|Cash|Accruals}}` offers 2 to 10 choices separated by `|`. The preview shows `[Basis: Cash / Accruals]`, and its answer line must match one choice exactly, including case; any other answer leaves nothing to copy. Each choice has 1 to 100 characters, no spaces at either end, no control characters and no `|`, `{` or `}`, and a choice may not repeat. A choice field counts toward the 10 fields, and a label used twice must repeat the same choices.
+A choice field such as `{{PICK:Basis|Cash|Accruals}}` offers 2 to 10 choices separated by `|`. The preview shows `[Basis: Cash / Accruals]`, and its answer line must match one choice exactly, including case; any other answer leaves nothing to copy. Each choice has 1 to 100 characters, no spaces at either end, no control characters and no `|`, `{` or `}`, and a choice may not repeat. A choice field counts towards the 10 fields, and a label used twice must repeat the same choices.
 
 To use AutoHotkey hotstrings you already have, put the `.ahk` file that defines them in `snippets.local`; it can keep running from there. The picker reads each `:options:abbreviation::replacement` line, and each continuation section under one, as a snippet labelled with its abbreviation. It never runs the file and loads only replacements that type literal text. It lists by line number, and does not load, entries with the `X` option or a function body, continuation sections with options, text before a continuation section or a second section after it, replacements containing `{{` or `}}`, and replacements that use key syntax such as `{Enter}`, `^`, `!`, `+` or `#` without the `T` or `R` option. A `#Hotstring` line that sets options other than `EndChars` or `NoMouse` excludes the whole file. Each abbreviation must have 1 to 40 ASCII letters, digits or symbols without spaces, and be unique across both folders, including abbreviations repeated under `#HotIf`. Hotstrings created or changed with the `Hotstring` function are not read.
 
-Each snippet accepts up to 16,384 characters and 100 tokens, and an `.ahk` file up to 65,536 bytes. A folder containing more than 100 `.txt` and `.ahk` files is excluded; the library considers at most 100 files across both folders and loads at most 1,000 snippets, with at most 262,144 characters of accepted snippet text. Each `.ahk` file lists at most 10 problems. General input and output accept up to 32,768 characters; dates and identifiers accept up to 64. These counts use UTF-16 code units. Oversize results are rejected without truncation. See the catalogue for command-specific limits.
-
-Clipboard size is validated after Windows supplies the text. The limit bounds accepted processing and output, but not the clipboard provider's initial allocation or transfer.
+Each snippet accepts up to 16,384 characters and 100 tokens, and an `.ahk` file up to 65,536 bytes. A folder containing more than 100 `.txt` and `.ahk` files is excluded; the library considers at most 100 files across both folders and loads at most 1,000 snippets, with at most 262,144 characters of accepted snippet text. Each `.ahk` file lists at most 10 problems. General input and output accept up to 32,768 characters; dates and identifiers accept up to 64. These counts use UTF-16 code units. Oversize results are rejected without truncation. See the catalogue for command-specific limits, and [troubleshooting](docs/troubleshooting.md) for how clipboard size is checked.
 
 ## Use the date helpers in another script
 
-Include `dates.ahk` to use its functions without registering hotkeys:
-
-```ahk
-#Requires AutoHotkey v2.0
-#Include C:\path\to\au-accounting-hotkeys\dates.ahk
-
-MsgBox(FinancialYearEnd(2026))       ; 30/06/2026
-MsgBox(QuarterEnd(2026, 1))          ; 30/09/2025
-MsgBox(FinancialYearLabel(2026))     ; 2025-26
-MsgBox(AustralianDate())             ; Today's local date
-```
+Include `dates.ahk` or another helper file to use its functions without starting shortcuts or reading the clipboard. [Library helpers](docs/library.md) shows the include pattern and lists the date, identifier, text and snippet APIs.
 
 Related tools: [Accounting Excel Toolkit](https://github.com/ryanduguid/accounting-review-pipeline/tree/main/adapters/accounting-excel-toolkit) provides Power Query and VBA utilities; [Ozzit](https://github.com/ryanduguid/Ozzit) provides native Excel modelling functions.
 
-See [library helpers](docs/library.md) for the additional date, identifier, text and snippet APIs. Helpers can be included without starting shortcuts or reading the clipboard.
-
 ## Check changes
 
-From the repository root, run these PowerShell commands with AutoHotkey v2 installed:
-
-```powershell
-& .\tests\run.ps1
-& .\tests\run.ps1 -UI
-```
-
-For a portable or differently located runtime, pass `-AutoHotkey 'C:\path\to\AutoHotkey64.exe'`.
-
-The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all 4 shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
+[CONTRIBUTING.md](CONTRIBUTING.md) gives the 2 PowerShell commands, `& .\tests\run.ps1` and the same with `-UI`. The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all 4 shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
 
 GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.31 runtimes for x64 and x86. The interactive checks must be run locally. The Excel formatting shortcuts are tested against stand-ins for Excel's object model, not Excel itself. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
