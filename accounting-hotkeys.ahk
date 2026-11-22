@@ -30,8 +30,7 @@ ReadSettings(path) {
     year := IniRead(path, "Period", "FinancialYearEnding", defaults["Period"]["FinancialYearEnding"])
     quarter := IniRead(path, "Period", "Quarter", defaults["Period"]["Quarter"])
     ValidateYear(year)
-    if !RegExMatch(quarter, "^[1-4]\z")
-        throw ValueError("Quarter must be 1, 2, 3 or 4.")
+    ValidateQuarter(quarter)
 
     applications := []
     applicationList := Trim(IniRead(path, "Scope", "Applications", defaults["Scope"]["Applications"]))
