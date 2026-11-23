@@ -1107,7 +1107,7 @@ TestPickerManualLimits() {
         AssertEqual(palette.CopyButton.Enabled, false, "Oversize native search disables copy")
         ReplaceNativeEdit(palette.Search, RepeatText(" ", 128))
         AssertEqual(StrLen(palette.Search.Value), 128, "At-cap native search is retained completely")
-        AssertEqual(palette.Rows.Length, 65, "At-cap whitespace query still searches the catalogue")
+        AssertEqual(palette.Rows.Length, BuiltinCommands().Length, "At-cap whitespace query still searches the catalogue")
         AssertEqual(fake.Reads + fake.Writes, 0, "Manual entry does not access clipboard")
     } finally palette.Close()
 }
