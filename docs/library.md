@@ -51,7 +51,7 @@ MsgBox(ExpandSnippet("FY {{FY_LABEL}} ends {{FY_END}}", context))
 
 ## Identifier and text API
 
-`FormatABN(text)` and `FormatACN(text)` return spaced digits or throw `ValueError` for malformed input. `ABNChecksumPasses(text)` and `ACNChecksumPasses(text)` return false for malformed input or a failed check. Preserve identifiers as strings, especially ACNs with leading zeros. `IdentifierReport(text, kind)` accepts ABN or ACN and states the registry limitation.
+`FormatABN(text)` and `FormatACN(text)` return spaced digits or throw `ValueError` for malformed input. `ABNChecksumPasses(text)` and `ACNChecksumPasses(text)` return false for malformed input or a failed check. `FormatCheckedABN(text)` returns the spaced ABN only when its checksum passes and otherwise throws `ValueError`. Preserve identifiers as strings, especially ACNs with leading zeros. `IdentifierReport(text, kind)` accepts ABN or ACN and states the registry limitation.
 
 `text.ahk` exposes `CheckedText`, `NormaliseLineEndings`, `TrimLines`, `CollapseHorizontalWhitespace`, `SingleLine`, `RemoveBlankLines`, `NumberedLines`, `QuotedList`, `UniqueLines`, `SortedLines`, `CSVRow`, `TSVRow`, `PrepareFilenameText` and `LooksLikeFormula`. Their output contracts are in the [catalogue](commands.md#text-and-filenames). `CheckedText` applies the fixed character and control-character limits. Transformation helpers do not read or write files.
 
