@@ -75,7 +75,8 @@ SettingDefaults() {
         "Scope", ["Applications", ""],
         "Holidays", ["State", ""],
         "Hotkeys", ["YearEnd", "Insert", "Today", "^!d", "QuarterEnd", "^!q", "FinancialYear", "^!y", "Picker", "",
-            "ExcelAccounting", "", "ExcelThousands", "", "ExcelPercent", "", "ExcelDates", "", "ExcelColourCode", "", "ExcelCentreAcross", ""]
+            "ExcelAccounting", "", "ExcelThousands", "", "ExcelPercent", "", "ExcelDates", "", "ExcelColourCode", "", "ExcelCentreAcross", "",
+            "ExcelToggleSign", "", "ExcelDivide1000", "", "ExcelMultiply1000", "", "ExcelCopyFormulas", "", "ExcelPasteFormulas", ""]
     ) {
         values := Map()
         values.CaseSense := "Off"

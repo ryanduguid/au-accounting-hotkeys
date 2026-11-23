@@ -73,14 +73,14 @@ Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation befor
 
 ## Format cells in Excel
 
-Six opt-in shortcuts format the selected cells in Excel: accounting number formats with negatives in brackets, amounts in thousands, percentages, a date-format cycle starting with `dd/mm/yyyy`, blue inputs and black formulas, and Center Across Selection. Each is off until you give it a key under `[Hotkeys]`, for example:
+Six opt-in shortcuts format the selected cells in Excel: accounting number formats with negatives in brackets, amounts in thousands, percentages, a date-format cycle starting with `dd/mm/yyyy`, blue inputs and black formulas, and Center Across Selection. Five more change values and formulas: toggle the sign, divide or multiply by 1,000, and copy formulas to paste them elsewhere exactly as written. Each is off until you give it a key under `[Hotkeys]`, for example:
 
 ```ini
 ExcelAccounting=^+!a
 ExcelColourCode=^+!c
 ```
 
-They work only in Excel and Excel cannot undo them. See the [command catalogue](docs/commands.md#excel-formatting-shortcuts) for every format.
+They work only in Excel and Excel cannot undo them; the sign and scale shortcuts reverse with a second press or the opposite shortcut. See the [command catalogue](docs/commands.md#excel-formatting-shortcuts) for every format and change.
 
 ## Command library
 
@@ -129,6 +129,11 @@ ExcelPercent=
 ExcelDates=
 ExcelColourCode=
 ExcelCentreAcross=
+ExcelToggleSign=
+ExcelDivide1000=
+ExcelMultiply1000=
+ExcelCopyFormulas=
+ExcelPasteFormulas=
 ```
 
 Save the file and select **Reload Script** from the tray menu. The tray tooltip shows the selected financial year and quarter.
@@ -151,7 +156,7 @@ Applications=EXCEL.EXE,WINWORD.EXE
 
 Before using `BusinessDueDate`, set `State` under `[Holidays]` to `ATO`, which counts a holiday for the whole of any State or Territory, or to one of `ACT`, `NSW`, `NT`, `QLD`, `SA`, `TAS`, `VIC` or `WA`. Its holiday list covers 1 July 2026 to 30 June 2027. It counts every day in the ATO's tables; see the [command catalogue](docs/commands.md#date-arithmetic).
 
-Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown or repeated sections and settings, and invalid values stop startup with an error message. The recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear`, `Picker` and the 6 [Excel formatting shortcuts](#format-cells-in-excel); additional commands are available through the picker.
+Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown or repeated sections and settings, and invalid values stop startup with an error message. The recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear`, `Picker` and the 11 [Excel shortcuts](#format-cells-in-excel); additional commands are available through the picker.
 
 `config.ini` is ignored by Git so your settings remain local. Keyboard layouts and application shortcuts can differ; test your mappings in the applications you use.
 
@@ -185,7 +190,7 @@ Related tools: [Accounting Excel Toolkit](https://github.com/ryanduguid/accounti
 
 [CONTRIBUTING.md](CONTRIBUTING.md) gives the 2 PowerShell commands, `& .\tests\run.ps1` and the same with `-UI`. The first command checks date boundaries, identifier algorithms, configuration, text transformations, snippet loading, limits and picker state using a fake clipboard. It also checks production boundaries against positive controls. The second opens fabricated windows, types through all 4 shortcuts, operates the native picker controls and checks application scope. It requires an interactive Windows desktop and closes its test windows afterwards. Neither command reads or writes your clipboard.
 
-GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.31 runtimes for x64 and x86. The interactive checks must be run locally. The Excel formatting shortcuts are tested against stand-ins for Excel's object model, not Excel itself. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
+GitHub Actions runs the first command with checksum-verified AutoHotkey 2.0.31 runtimes for x64 and x86. The interactive checks must be run locally. The Excel shortcuts are tested against stand-ins for Excel's object model, not Excel itself. These checks do not establish compatibility with individual accounting applications, Excel cell interpretation, alternate keyboard layouts, remote desktops or firm clipboard policies.
 
 CodeQL, actionlint and zizmor check the GitHub Actions workflows. For each tagged release, the release workflow runs the library and workflow security checks before packaging the source with signed build provenance. See [security checks and release verification](docs/security.md) for their coverage, release requirements and download verification commands. For a firm's IT review, [what the script reads, types and stores](docs/it-review.md) lists each behaviour with a way to check it in the source.
 
