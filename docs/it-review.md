@@ -25,7 +25,7 @@ Only the 4 shortcuts type, and only into the active window: the selected financi
 
 The 6 Excel formatting shortcuts are off until a key is set for each in `config.ini`. When one is pressed whilst `EXCEL.EXE` is active, it sets the number format, font colour or horizontal alignment of the selected cells in the active workbook window (`ExcelCommands`, `ActiveExcelSelection`). They change no cell values, formulas or other workbooks, and Excel cannot undo them.
 
-Five more Excel shortcuts, also off until given a key, change the selected cells' values or formulas: `ExcelToggleSign`, `ExcelDivide1000` and `ExcelMultiply1000` change number constants and wrap formulas that return numbers, and `ExcelPasteFormulas` writes formulas that `ExcelCopyFormulas` remembered in the script's memory. They use no clipboard and touch no other workbook.
+Five more Excel shortcuts, also off until given a key, change the selected cells' values or formulas: `ExcelToggleSign`, `ExcelDivide1000` and `ExcelMultiply1000` change number constants and wrap formulas that return numbers, and `ExcelPasteFormulas` writes formulas that `ExcelCopyFormulas` remembered in the script's memory. They use no clipboard and touch no other workbook. Whilst they write, they turn off Excel's `AutoFillFormulasInLists` option, so a formula written into one cell of a table is not copied down the whole column, and restore its earlier value afterwards (`WriteCells`).
 
 ## What it stores
 

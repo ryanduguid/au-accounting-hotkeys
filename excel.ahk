@@ -39,23 +39,45 @@ ScaleCells(range, operation) {
                 cells.Push(cell)
         }
     }
-    changed := 0
+    ; Every new value is worked out before the first write, so a write cannot feed a later one.
+    writes := []
     for cell in cells {
-        if !(cell.Value2 is Number) || cell.HasArray
-            continue  ; Text, errors and legacy array formulas stay as they are.
+        ; Text, errors, dates, times and legacy array formulas stay as they are.
+        if !(cell.Value2 is Number) || cell.HasArray || DateOrTimeFormat(cell.NumberFormat)
+            continue
         property := FormulaProperty(cell)
         formula := cell.%property%
         if cell.HasFormula
-            cell.%property% := ScaledFormula(formula, operation)
+            writes.Push([cell, property, ScaledFormula(formula, operation)])
         else if formula != ""  ; A cell in a spilled array has a value but no formula of its own.
-            cell.Value2 := ScaledNumber(cell.Value2, operation)
-        else
-            continue
-        changed += 1
+            writes.Push([cell, "Value2", ScaledNumber(cell.Value2, operation)])
     }
-    if !changed
+    if !writes.Length
         return "No numbers or formulas returning numbers in the selection."
-    return reported[operation] changed (changed = 1 ? " cell" : " cells") (operation = "negate" ? "" : " by 1,000")
+    WriteCells(range, writes)
+    return reported[operation] writes.Length (writes.Length = 1 ? " cell" : " cells") (operation = "negate" ? "" : " by 1,000")
+}
+
+; Excel copies a formula written into one cell of a table's calculated column to the whole column,
+; including cells outside the selection, unless AutoFillFormulasInLists is off.
+WriteCells(range, writes) {
+    autoCorrect := range.Application.AutoCorrect
+    previous := autoCorrect.AutoFillFormulasInLists
+    autoCorrect.AutoFillFormulasInLists := false
+    try {
+        for write in writes
+            write[1].%write[2]% := write[3]
+    } finally autoCorrect.AutoFillFormulasInLists := previous
+}
+
+; True for a date or time format. Quoted text, escaped characters, padding and bracketed colours,
+; conditions and locales are removed first; elapsed-time brackets such as [h] count as time.
+DateOrTimeFormat(format) {
+    if !(format is String)
+        return false
+    format := RegExReplace(format, '"[^"]*"|\\.|[_*].')
+    format := RegExReplace(format, "i)\[(?!h+\]|m+\]|s+\])[^\]]*\]")
+    return RegExMatch(format, "i)[dmyhs]") > 0
 }
 
 ScaledFormula(formula, operation) {
@@ -150,8 +172,10 @@ CopyExactFormulas(range) {
 PasteExactFormulas(range) {
     if !ExactFormulas.Copied
         return "Copy formulas exactly first."
+    writes := []
     for formula in ExactFormulas.Copied
-        range.Cells(formula[1], formula[2]).%formula[3]% := formula[4]
+        writes.Push([range.Cells(formula[1], formula[2]), formula[3], formula[4]])
+    WriteCells(range, writes)
     return "Pasted " ExactFormulas.Copied.Length (ExactFormulas.Copied.Length = 1 ? " formula" : " formulas") " exactly"
 }
 

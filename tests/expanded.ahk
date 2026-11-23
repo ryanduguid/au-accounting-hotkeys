@@ -1243,7 +1243,7 @@ TestExcelFormatting() {
 }
 
 FakeCells(found) {
-    range := {CountLarge: 12, Calls: []}
+    range := {CountLarge: 12, Calls: [], Application: FakeExcel()}
     range.DefineProp("SpecialCells", {Call: (this, kind, value) => (this.Calls.Push(kind "," value), found.Has(kind) ? found[kind] : NoCellsFound())})
     return range
 }
@@ -1296,7 +1296,7 @@ TestExcelValues() {
     legacy := FakeValueCell(2.0, "=ROW(A1:A2)"), legacy.HasArray := true
     commands["ExcelToggleSign"].Call(FakeCells(Map(-4123, FakeFound([legacy]))))
     AssertEqual(legacy.Formula2, "=ROW(A1:A2)", "Array formula left unchanged")
-    old := {HasFormula: true, HasArray: false, Formula: "=A1", Value2: 1.0, CountLarge: 1}
+    old := {HasFormula: true, HasArray: false, Formula: "=A1", Value2: 1.0, NumberFormat: "General", CountLarge: 1, Application: FakeExcel()}
     commands["ExcelToggleSign"].Call(old)
     AssertEqual(old.Formula, "=-(A1)", "Formula property used where Formula2 is missing")
     AssertEqual(old.HasOwnProp("Formula2"), false, "Formula2 not created where Excel lacks it")
@@ -1308,6 +1308,25 @@ TestExcelValues() {
         AssertEqual(cell.Value2, test[2], "Single cell " A_Index)
     }
     AssertEqual(commands["ExcelToggleSign"].Call(FakeCells(Map())), "No numbers or formulas returning numbers in the selection.", "Empty selection reported")
+
+    for test in [["dd/mm/yyyy", true], ["[$-C09]d mmmm yyyy", true], ["h:mm AM/PM", true], ["[h]:mm", true], ["mmm-yy", true],
+        ["General", false], ['#,##0_);(#,##0);"-"_)', false], ['_-[$$-C09]* #,##0.00_-;-[$$-C09]* #,##0.00_-;_-[$$-C09]* "-"??_-;_-@_-', false],
+        ["0.00E+00", false], ["@", false], ["0%", false], ['0.00 "days"', false], ["#,##0\h", false], ["[Red]#,##0", false], [ComValue(1, 0), false]]
+        AssertEqual(DateOrTimeFormat(test[1]), test[2], "Date format " A_Index)
+    date := FakeValueCell(45000.0), date.NumberFormat := "dd/mm/yyyy"
+    due := FakeValueCell(45030.0, "=A1+30"), due.NumberFormat := "d mmm yyyy"
+    hours := FakeValueCell(1.5), hours.NumberFormat := "[h]:mm"
+    amount := FakeValueCell(250.0)
+    range := FakeCells(Map(2, FakeFound([date, hours, amount]), -4123, FakeFound([due])))
+    AssertEqual(commands["ExcelDivide1000"].Call(range), "Divided 1 cell by 1,000", "Only the amount divided")
+    AssertEqual(date.Value2 due.Formula2 hours.Value2, "45000.0=A1+301.5", "Dates and times left unchanged")
+    AssertEqual(amount.Value2, 0.25, "Amount beside dates divided")
+    AssertEqual(JoinLines(range.Application.AutoCorrect.Log, ","), "0,1", "Table formula autofill off during writes and restored")
+    locked := FakeValueCell(3.0, "=B1")
+    locked.DefineProp("Formula2", {get: this => "=B1", set: (*) => NoCellsFound()})
+    range := FakeCells(Map(-4123, FakeFound([locked])))
+    try commands["ExcelToggleSign"].Call(range)
+    AssertEqual(JoinLines(range.Application.AutoCorrect.Log, ","), "0,1", "Table formula autofill restored after a failed write")
 
     constant.Value2 := 5.0
     AssertValueError(() => commands["ExcelToggleSign"].Call(FakeCells(Map(2, FakeFound([constant]), -4123, FakeFound([formula], 10000)))), "Over 10,000 cells refused", "Select at most 10,000 numbers and formulas.")
@@ -1334,7 +1353,7 @@ TestExcelValues() {
 }
 
 FakeValueCell(value, formula := "=") {
-    cell := {HasArray: false, Value2: value, Formula2: formula = "=" ? String(value) : formula}
+    cell := {HasArray: false, Value2: value, Formula2: formula = "=" ? String(value) : formula, NumberFormat: "General", Application: FakeExcel()}
     cell.DefineProp("HasFormula", {get: this => SubStr(this.Formula2, 1, 1) = "="})
     return cell
 }
@@ -1352,7 +1371,7 @@ FakeCellAt(sheet, row, column) {
 }
 
 FakeBlock(sheet, row, column, rows, columns) {
-    block := {CountLarge: rows * columns, Rows: {Count: rows}, Columns: {Count: columns}, Areas: {Count: 1}}
+    block := {CountLarge: rows * columns, Rows: {Count: rows}, Columns: {Count: columns}, Areas: {Count: 1}, Application: FakeExcel()}
     block.DefineProp("Cells", {Call: (this, r, c) => FakeHasFormula(FakeCellAt(sheet, row + r - 1, column + c - 1))})
     return block
 }
@@ -1361,4 +1380,10 @@ FakeHasFormula(cell) {
     if !cell.HasOwnProp("HasFormula")
         cell.DefineProp("HasFormula", {get: this => SubStr(this.Formula2, 1, 1) = "="})
     return cell
+}
+
+FakeExcel() {
+    autoCorrect := {Log: []}
+    autoCorrect.DefineProp("AutoFillFormulasInLists", {get: this => this.Log.Length ? this.Log[-1] : true, set: (this, value) => this.Log.Push(value)})
+    return {AutoCorrect: autoCorrect}
 }
