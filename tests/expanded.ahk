@@ -22,6 +22,7 @@ TestExpanded() {
     TestPickerHolidayState()
     TestAddSnippet()
     TestExcelFormatting()
+    TestExcelValues()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
     AssertEqual(SettingsWith([["Hotkeys", "Picker", "!^Space"]]).Keys["Picker"], "^!Space", "Picker mapping normalised")
     AssertValueError(() => SettingsWith([["Hotkeys", "Picker", "Ins"]]), "Picker alias conflict rejected")
@@ -1185,7 +1186,7 @@ TestAddSnippet() {
 ; Excel formatting runs against stand-ins for a Range; a desktop run in Excel is still needed.
 TestExcelFormatting() {
     commands := ExcelCommands()
-    AssertEqual(commands.Count, 6, "Six Excel formatting commands")
+    AssertEqual(commands.Count, 11, "Eleven Excel commands")
     for name in commands
         AssertEqual(SettingDefaults()["Hotkeys"][name], "", "Excel command " name " off by default")
     AssertEqual(SettingsWith([["Hotkeys", "ExcelDates", "+!^d"]]).Keys["ExcelDates"], "^!+d", "Excel mapping normalised")
@@ -1242,11 +1243,147 @@ TestExcelFormatting() {
 }
 
 FakeCells(found) {
-    range := {CountLarge: 12, Calls: []}
+    range := {CountLarge: 12, Calls: [], Application: FakeExcel()}
     range.DefineProp("SpecialCells", {Call: (this, kind, value) => (this.Calls.Push(kind "," value), found.Has(kind) ? found[kind] : NoCellsFound())})
     return range
 }
 
 NoCellsFound() {
     throw Error("No cells were found.")
+}
+
+TestExcelValues() {
+    commands := ExcelCommands()
+    for name in ["ExcelToggleSign", "ExcelDivide1000", "ExcelMultiply1000", "ExcelCopyFormulas", "ExcelPasteFormulas"]
+        AssertEqual(SettingDefaults()["Hotkeys"][name], "", name " off by default")
+
+    for test in [
+        ["=A1", "negate", "=-(A1)"],
+        ["=-(A1)", "negate", "=A1"],
+        ["=-(A1)+(B1)", "negate", "=-(-(A1)+(B1))"],
+        ['=-(A1)&")"&-(B1)', "negate", '=-(-(A1)&")"&-(B1))'],
+        ['=-(LEN(")"))', "negate", '=LEN(")")'],
+        ["=-('Sheet (2)'!A1)", "negate", "='Sheet (2)'!A1"],
+        ["=-(Sales[Amount (AUD)])", "negate", "=Sales[Amount (AUD)]"],
+        ["=SUM(B2:B9)", "divide", "=(SUM(B2:B9))/1000"],
+        ["=(SUM(B2:B9))*1000", "divide", "=SUM(B2:B9)"],
+        ["=(SUM(B2:B9))/1000", "multiply", "=SUM(B2:B9)"],
+        ["=(A1)/1000", "divide", "=((A1)/1000)/1000"],
+        ["=(A1)+(B1)*1000", "divide", "=((A1)+(B1)*1000)/1000"]
+    ]
+        AssertEqual(ScaledFormula(test[1], test[2]), test[3], "Formula " test[2] " " A_Index)
+    AssertEqual(ScaledNumber(1234.5, "negate"), -1234.5, "Number negated")
+    AssertEqual(ScaledNumber(1234.5, "divide"), 1.2345, "Number divided by 1,000")
+    AssertEqual(ScaledNumber(1.2345, "multiply"), 1234.5, "Multiplying rounds to Excel's 15 digits")
+    AssertEqual(ScaledNumber(-0.1, "multiply"), -100.0, "Negative multiplied by 1,000")
+    AssertEqual(ScaledNumber(123456789012345678.0, "negate"), -123456789012345678.0, "Negating keeps every digit")
+
+    constant := FakeValueCell(1234.5), formula := FakeValueCell(3.0, "=SUM(A1:A2)")
+    range := FakeCells(Map(2, FakeFound([constant]), -4123, FakeFound([formula])))
+    AssertEqual(commands["ExcelToggleSign"].Call(range), "Sign changed in 2 cells", "Toggle sign reported")
+    AssertEqual(JoinLines(range.Calls, ";"), "2,1;-4123,1", "Only number constants and formulas returning numbers searched")
+    AssertEqual(constant.Value2, -1234.5, "Constant sign toggled")
+    AssertEqual(formula.Formula2, "=-(SUM(A1:A2))", "Formula sign toggled")
+    commands["ExcelToggleSign"].Call(range)
+    AssertEqual(formula.Formula2, "=SUM(A1:A2)", "Formula sign toggled back")
+    AssertEqual(commands["ExcelDivide1000"].Call(range), "Divided 2 cells by 1,000", "Divide reported")
+    AssertEqual(constant.Value2, 1.2345, "Constant divided")
+    AssertEqual(formula.Formula2, "=(SUM(A1:A2))/1000", "Formula divided")
+    AssertEqual(commands["ExcelMultiply1000"].Call(range), "Multiplied 2 cells by 1,000", "Multiply reported")
+    AssertEqual(constant.Value2, 1234.5, "Constant restored")
+    AssertEqual(formula.Formula2, "=SUM(A1:A2)", "Formula restored")
+
+    legacy := FakeValueCell(2.0, "=ROW(A1:A2)"), legacy.HasArray := true
+    commands["ExcelToggleSign"].Call(FakeCells(Map(-4123, FakeFound([legacy]))))
+    AssertEqual(legacy.Formula2, "=ROW(A1:A2)", "Array formula left unchanged")
+    old := {HasFormula: true, HasArray: false, Formula: "=A1", Value2: 1.0, NumberFormat: "General", CountLarge: 1, Application: FakeExcel()}
+    commands["ExcelToggleSign"].Call(old)
+    AssertEqual(old.Formula, "=-(A1)", "Formula property used where Formula2 is missing")
+    AssertEqual(old.HasOwnProp("Formula2"), false, "Formula2 not created where Excel lacks it")
+
+    for test in [[FakeValueCell(2500.0), 2.5], [FakeValueCell("125", "125"), "125"], [FakeValueCell(7.0, ""), 7.0], [FakeValueCell("x", '=A1&"x"'), "x"]] {
+        cell := test[1], cell.CountLarge := 1
+        cell.DefineProp("SpecialCells", {Call: (*) => NoCellsFound()})
+        commands["ExcelDivide1000"].Call(cell)
+        AssertEqual(cell.Value2, test[2], "Single cell " A_Index)
+    }
+    AssertEqual(commands["ExcelToggleSign"].Call(FakeCells(Map())), "No numbers or formulas returning numbers in the selection.", "Empty selection reported")
+
+    for test in [["dd/mm/yyyy", true], ["[$-C09]d mmmm yyyy", true], ["h:mm AM/PM", true], ["[h]:mm", true], ["mmm-yy", true],
+        ["General", false], ['#,##0_);(#,##0);"-"_)', false], ['_-[$$-C09]* #,##0.00_-;-[$$-C09]* #,##0.00_-;_-[$$-C09]* "-"??_-;_-@_-', false],
+        ["0.00E+00", false], ["@", false], ["0%", false], ['0.00 "days"', false], ["#,##0\h", false], ["[Red]#,##0", false], [ComValue(1, 0), false]]
+        AssertEqual(DateOrTimeFormat(test[1]), test[2], "Date format " A_Index)
+    date := FakeValueCell(45000.0), date.NumberFormat := "dd/mm/yyyy"
+    due := FakeValueCell(45030.0, "=A1+30"), due.NumberFormat := "d mmm yyyy"
+    hours := FakeValueCell(1.5), hours.NumberFormat := "[h]:mm"
+    amount := FakeValueCell(250.0)
+    range := FakeCells(Map(2, FakeFound([date, hours, amount]), -4123, FakeFound([due])))
+    AssertEqual(commands["ExcelDivide1000"].Call(range), "Divided 1 cell by 1,000", "Only the amount divided")
+    AssertEqual(date.Value2 due.Formula2 hours.Value2, "45000.0=A1+301.5", "Dates and times left unchanged")
+    AssertEqual(amount.Value2, 0.25, "Amount beside dates divided")
+    AssertEqual(JoinLines(range.Application.AutoCorrect.Log, ","), "0,1", "Table formula autofill off during writes and restored")
+    locked := FakeValueCell(3.0, "=B1")
+    locked.DefineProp("Formula2", {get: this => "=B1", set: (*) => NoCellsFound()})
+    range := FakeCells(Map(-4123, FakeFound([locked])))
+    try commands["ExcelToggleSign"].Call(range)
+    AssertEqual(JoinLines(range.Application.AutoCorrect.Log, ","), "0,1", "Table formula autofill restored after a failed write")
+
+    constant.Value2 := 5.0
+    AssertValueError(() => commands["ExcelToggleSign"].Call(FakeCells(Map(2, FakeFound([constant]), -4123, FakeFound([formula], 10000)))), "Over 10,000 cells refused", "Select at most 10,000 numbers and formulas.")
+    AssertEqual(constant.Value2, 5.0, "Nothing changed when the limit is passed")
+
+    sheet := Map()
+    source := FakeBlock(sheet, 2, 2, 2, 2)
+    FakeCellAt(sheet, 2, 2).Formula2 := "=A2*$A$1", FakeCellAt(sheet, 3, 3).Formula2 := "=SUM(B$2:B2)"
+    FakeCellAt(sheet, 2, 3).Formula2 := "17"
+    AssertEqual(commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 10, 1, 1, 1)), "Copy formulas exactly first.", "Paste before copy refused")
+    AssertEqual(commands["ExcelCopyFormulas"].Call(source), "Copied 2 formulas exactly", "Copy reported")
+    FakeCellAt(sheet, 2, 2).Formula2 := "=changed"
+    AssertEqual(commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 10, 1, 3, 3)), "Pasted 2 formulas exactly", "Paste reported")
+    AssertEqual(FakeCellAt(sheet, 10, 1).Formula2, "=A2*$A$1", "Relative reference kept")
+    AssertEqual(FakeCellAt(sheet, 11, 2).Formula2, "=SUM(B$2:B2)", "Mixed reference kept")
+    AssertEqual(FakeCellAt(sheet, 10, 2).Formula2, "", "Constant in the copied block not pasted")
+    AssertEqual(FakeCellAt(sheet, 12, 3).Formula2, "", "Paste covers only the copied shape")
+    AssertEqual(commands["ExcelCopyFormulas"].Call(FakeBlock(sheet, 20, 20, 2, 2)), "No formulas in the selection.", "Empty copy reported")
+    commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 30, 1, 1, 1))
+    AssertEqual(FakeCellAt(sheet, 30, 1).Formula2, "=A2*$A$1", "Empty copy keeps the earlier formulas")
+    two := FakeBlock(sheet, 1, 1, 1, 1), two.Areas.Count := 2
+    AssertValueError(() => commands["ExcelCopyFormulas"].Call(two), "Several areas refused", "Select one block of cells.")
+    AssertValueError(() => commands["ExcelCopyFormulas"].Call(FakeBlock(sheet, 1, 1, 101, 100)), "Over 10,000 cells refused for copying", "Select at most 10,000 cells.")
+}
+
+FakeValueCell(value, formula := "=") {
+    cell := {HasArray: false, Value2: value, Formula2: formula = "=" ? String(value) : formula, NumberFormat: "General", Application: FakeExcel()}
+    cell.DefineProp("HasFormula", {get: this => SubStr(this.Formula2, 1, 1) = "="})
+    return cell
+}
+
+FakeFound(cells, count := 0) {
+    cells.CountLarge := count || cells.Length
+    return cells
+}
+
+FakeCellAt(sheet, row, column) {
+    key := row "," column
+    if !sheet.Has(key)
+        sheet[key] := {Formula2: "", HasArray: false}
+    return sheet[key]
+}
+
+FakeBlock(sheet, row, column, rows, columns) {
+    block := {CountLarge: rows * columns, Rows: {Count: rows}, Columns: {Count: columns}, Areas: {Count: 1}, Application: FakeExcel()}
+    block.DefineProp("Cells", {Call: (this, r, c) => FakeHasFormula(FakeCellAt(sheet, row + r - 1, column + c - 1))})
+    return block
+}
+
+FakeHasFormula(cell) {
+    if !cell.HasOwnProp("HasFormula")
+        cell.DefineProp("HasFormula", {get: this => SubStr(this.Formula2, 1, 1) = "="})
+    return cell
+}
+
+FakeExcel() {
+    autoCorrect := {Log: []}
+    autoCorrect.DefineProp("AutoFillFormulasInLists", {get: this => this.Log.Length ? this.Log[-1] : true, set: (this, value) => this.Log.Push(value)})
+    return {AutoCorrect: autoCorrect}
 }
