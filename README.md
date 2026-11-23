@@ -84,7 +84,7 @@ They work only in Excel and Excel cannot undo them. See the [command catalogue](
 
 ## Command library
 
-The picker includes 65 built-in commands and 12 draft snippets:
+The picker includes 66 built-in commands and 12 draft snippets:
 
 - Copy financial-year and quarter starts, ends, ranges, ISO dates and filename labels.
 - List the selected year's month ends.
@@ -93,7 +93,7 @@ The picker includes 65 built-in commands and 12 draft snippets:
 - Turn 2 times on one day into decimal hours.
 - Clean, format and total pasted amounts, and work out 10% GST on GST-inclusive or GST-exclusive amounts.
 - Get the divide-by-9 and half-amount hints for a reconciliation difference.
-- Format ABNs and ACNs without losing leading zeros, and report their format/checksum result.
+- Format ABNs and ACNs without losing leading zeros, format an ABN only once its checksum passes, and report their format/checksum result.
 - Trim, normalise, number, sort and deduplicate text, or turn lines into a CSV row, a tab-separated row or a quoted list.
 - Prepare a filename component as text, without renaming a file.
 - Start records requests, reconciliation workpapers, journal support notes and review queries from editable drafts.

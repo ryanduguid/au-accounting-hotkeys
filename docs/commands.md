@@ -115,6 +115,7 @@ Accepts digits and ordinary spaces only, up to 64 characters. There must be exac
 | Identifier | Input | Result |
 | --- | --- | --- |
 | `ABNFormat` | `10000000000` | `10 000 000 000` |
+| `ABNFormatChecked` | `51824753556` | `51 824 753 556`; a number whose checksum fails is refused with a notice, leaving nothing to copy |
 | `ABNCheck` | `10000000000` | Format/checksum report |
 | `ACNFormat` | `001234564` | `001 234 564` |
 | `ACNCheck` | `001234565` | Format/checksum failure report |

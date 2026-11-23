@@ -29,6 +29,14 @@ ABNChecksumPasses(text) {
     return Mod(total, 89) = 0
 }
 
+; Formats an ABN only when its checksum passes, so a mistyped number is never copied as if checked.
+FormatCheckedABN(text) {
+    formatted := FormatABN(text)
+    if !ABNChecksumPasses(text)
+        throw ValueError("ABN checksum fails, so nothing was formatted and the clipboard is unchanged. Check the number against its source.")
+    return formatted
+}
+
 FormatACN(text) {
     digits := IdentifierDigits(text, 9)
     return SubStr(digits, 1, 3) " " SubStr(digits, 4, 3) " " SubStr(digits, 7, 3)

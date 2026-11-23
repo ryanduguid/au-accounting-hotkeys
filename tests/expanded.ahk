@@ -20,6 +20,7 @@ TestExpanded() {
     TestSnippetLimits()
     TestPickerState()
     TestPickerHolidayState()
+    TestPickerCheckedABN()
     TestAddSnippet()
     TestExcelFormatting()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
@@ -124,6 +125,10 @@ TestIdentifiersAndText() {
     for badIdentifier in ["ABN 51824753556", "51-824-753-556", "51824753556`n", "51824753556`t", "5182475355", "51 824 753 556 1"]
         AssertValueError(FormatABN.Bind(badIdentifier), "Bad ABN input rejected")
     AssertValueError(() => FormatACN("004-085-616"), "Bad ACN input rejected")
+    AssertEqual(FormatCheckedABN(" 51824753556 "), "51 824 753 556", "Checked ABN formatted")
+    AssertValueError(() => FormatCheckedABN("51 824 753 557"), "Failed ABN checksum not formatted", "ABN checksum fails, so nothing was formatted and the clipboard is unchanged. Check the number against its source.")
+    AssertValueError(() => FormatCheckedABN("00000090000"), "Leading-zero ABN not formatted")
+    AssertValueError(() => FormatCheckedABN("5182475355"), "Short ABN rejected", "Identifier must contain exactly 11 digits.")
     AssertEqual(IdentifierReport("10000000000", "ABN"), "ABN 10 000 000 000`nFormat/checksum: passes`nRegistry/existence/status: not checked", "Checksum scope wording")
     AssertEqual(InStr(IdentifierReport("001234565", "ACN"), "fails") > 0, true, "Failed checksum reported")
     AssertEqual(TrimLines("  first `r`n`tsecond`t`rthird "), "first`nsecond`nthird", "Trim line ends")
@@ -710,7 +715,7 @@ TestCatalogue() {
     AssertValueError(() => ExpandSnippet(RepeatText("a", 16385), context), "Snippet over character limit")
     catalogue := LoadCommandCatalogue({Year: 2026, Quarter: 4, HolidayState: ""}, A_ScriptDir "\..")
     AssertEqual(catalogue.Errors.Length, 0, "Bundled snippets load without errors")
-    AssertEqual(catalogue.Commands.Length, 77, "Built-ins and bundled snippets discovered")
+    AssertEqual(catalogue.Commands.Length, 78, "Built-ins and bundled snippets discovered")
     for draft in LoadSnippets([A_ScriptDir "\..\snippets"], context).Items
         AssertEqual(InStr(draft.Body, "[complete") > 0, true, "Bundled draft requires completion: " draft.Name)
 }
@@ -869,6 +874,22 @@ TestPickerHolidayState() {
         fake.Value := "25/09/2026"
         palette.LoadInput()
         AssertEqual(palette.Output, "28/09/2026", "Picker passes the [Holidays] State")
+    } finally palette.Close()
+}
+
+TestPickerCheckedABN() {
+    fake := FakeClipboard()
+    palette := NewTestPicker(fake)
+    try {
+        ChooseCommand(palette, "ABNFormatChecked")
+        fake.Value := "51824753556"
+        palette.LoadInput()
+        AssertEqual(palette.Output, "51 824 753 556", "Clipboard ABN formatted after its checksum passes")
+        fake.Value := "51824753557"
+        palette.LoadInput()
+        AssertEqual(palette.CopyButton.Enabled, false, "Failed ABN checksum leaves nothing to copy")
+        AssertEqual(InStr(palette.Status.Text, "ABN checksum fails") > 0, true, "Failed ABN checksum shown")
+        AssertEqual(fake.Writes, 0, "Clipboard unchanged after a failed ABN checksum")
     } finally palette.Close()
 }
 
