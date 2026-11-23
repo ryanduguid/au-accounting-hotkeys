@@ -10,8 +10,149 @@ ExcelCommands() {
         "ExcelPercent", range => CycleNumberFormat(range, ['0.0%_);(0.0%);"-"_)', '0.00%_);(0.00%);"-"_)']),
         "ExcelDates", range => CycleNumberFormat(range, ["dd/mm/yyyy", "d mmm yyyy", "mmm-yy", "yyyy-mm-dd"]),
         "ExcelColourCode", ColourCodeCells,
-        "ExcelCentreAcross", CentreAcrossSelection
+        "ExcelCentreAcross", CentreAcrossSelection,
+        "ExcelToggleSign", range => ScaleCells(range, "negate"),
+        "ExcelDivide1000", range => ScaleCells(range, "divide"),
+        "ExcelMultiply1000", range => ScaleCells(range, "multiply"),
+        "ExcelCopyFormulas", CopyExactFormulas,
+        "ExcelPasteFormulas", PasteExactFormulas
     )
+}
+
+; Number constants and formulas returning numbers. A constant is multiplied in place; a formula is
+; wrapped, or unwrapped when the opposite shortcut wrapped it, so pressing it again reverses it.
+ScaleCells(range, operation) {
+    static reported := Map("negate", "Sign changed in ", "divide", "Divided ", "multiply", "Multiplied ")
+    cells := []
+    if range.CountLarge = 1 {
+        cells.Push(range)
+    } else {
+        ; xlCellTypeConstants and xlCellTypeFormulas, both with xlNumbers.
+        for kind in [2, -4123] {
+            try
+                found := range.SpecialCells(kind, 1)
+            catch
+                continue  ; Excel throws when no cell matches.
+            if cells.Length + found.CountLarge > 10000
+                throw ValueError("Select at most 10,000 numbers and formulas.")
+            for cell in found
+                cells.Push(cell)
+        }
+    }
+    changed := 0
+    for cell in cells {
+        if !(cell.Value2 is Number) || cell.HasArray
+            continue  ; Text, errors and legacy array formulas stay as they are.
+        property := FormulaProperty(cell)
+        formula := cell.%property%
+        if cell.HasFormula
+            cell.%property% := ScaledFormula(formula, operation)
+        else if formula != ""  ; A cell in a spilled array has a value but no formula of its own.
+            cell.Value2 := ScaledNumber(cell.Value2, operation)
+        else
+            continue
+        changed += 1
+    }
+    if !changed
+        return "No numbers or formulas returning numbers in the selection."
+    return reported[operation] changed (changed = 1 ? " cell" : " cells") (operation = "negate" ? "" : " by 1,000")
+}
+
+ScaledFormula(formula, operation) {
+    static wraps := Map("negate", ["-(", ")"], "divide", ["(", ")/1000"], "multiply", ["(", ")*1000"])
+    static opposite := Map("negate", "negate", "divide", "multiply", "multiply", "divide")
+    body := SubStr(formula, 2)
+    undo := wraps[opposite[operation]]
+    start := StrLen(undo[1]), finish := StrLen(undo[2])
+    if StrLen(body) > start + finish && SubStr(body, 1, start) == undo[1] && SubStr(body, -finish) == undo[2] {
+        inner := SubStr(body, start + 1, StrLen(body) - start - finish)
+        if OneExpression(inner)
+            return "=" inner
+    }
+    return "=" wraps[operation][1] body wraps[operation][2]
+}
+
+; True when the brackets balance and never close early, ignoring text, quoted sheet names and
+; structured references, so the opening and closing brackets around it belong together.
+OneExpression(text) {
+    depth := 0, quote := "", brackets := 0, escaped := false
+    Loop Parse text {
+        character := A_LoopField
+        if quote != "" {
+            if character = quote
+                quote := ""
+        } else if brackets {
+            if escaped
+                escaped := false
+            else if character = "'"
+                escaped := true
+            else if character = "["
+                brackets += 1
+            else if character = "]"
+                brackets -= 1
+        } else if character = '"' || character = "'" {
+            quote := character
+        } else if character = "[" {
+            brackets := 1
+        } else if character = "(" {
+            depth += 1
+        } else if character = ")" && --depth < 0 {
+            return false
+        }
+    }
+    return depth = 0 && quote = "" && !brackets
+}
+
+; Excel keeps 15 significant digits, so dividing and then multiplying returns the same number.
+ScaledNumber(value, operation) {
+    if operation = "negate"
+        return -value
+    return Float(Format("{:.15g}", operation = "divide" ? value / 1000 : value * 1000))
+}
+
+; Formula2 writes dynamic-array formulas as written; Excel versions without it have only Formula.
+FormulaProperty(cell) {
+    try {
+        formula := cell.Formula2
+        return "Formula2"
+    }
+    return "Formula"
+}
+
+class ExactFormulas {
+    static Copied := ""
+}
+
+; Remembers the selection's formulas as written, so pasting them elsewhere keeps every reference.
+CopyExactFormulas(range) {
+    if range.Areas.Count != 1
+        throw ValueError("Select one block of cells.")
+    if range.CountLarge > 10000
+        throw ValueError("Select at most 10,000 cells.")
+    formulas := []
+    Loop range.Rows.Count {
+        row := A_Index
+        Loop range.Columns.Count {
+            cell := range.Cells(row, A_Index)
+            if cell.HasFormula {
+                property := FormulaProperty(cell)
+                formulas.Push([row, A_Index, property, cell.%property%])
+            }
+        }
+    }
+    if !formulas.Length
+        return "No formulas in the selection."
+    ExactFormulas.Copied := formulas
+    return "Copied " formulas.Length (formulas.Length = 1 ? " formula" : " formulas") " exactly"
+}
+
+; Writes the copied formulas from the selection's first cell; cells that held no formula are left alone.
+PasteExactFormulas(range) {
+    if !ExactFormulas.Copied
+        return "Copy formulas exactly first."
+    for formula in ExactFormulas.Copied
+        range.Cells(formula[1], formula[2]).%formula[3]% := formula[4]
+    return "Pasted " ExactFormulas.Copied.Length (ExactFormulas.Copied.Length = 1 ? " formula" : " formulas") " exactly"
 }
 
 ; Applies the format after the selection's current one, or the first. Excel may report a format
