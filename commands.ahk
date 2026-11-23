@@ -48,6 +48,7 @@ BuiltinCommands() {
         MakeCommand("AgeingBucket", "Ageing bucket from due date to as-at date", "Input dates", (c, t) => AgeingBucket(t), true, 200),
         MakeCommand("DurationHours", "Decimal hours between 2 times on one day", "Input times", (c, t) => DurationHours(t), true, 64),
         MakeCommand("ABNFormat", "Format ABN with spaces", "Identifiers", (c, t) => FormatABN(t), true, 64),
+        MakeCommand("ABNFormatChecked", "Format ABN with spaces after its checksum passes", "Identifiers", (c, t) => FormatCheckedABN(t), true, 64),
         MakeCommand("ABNCheck", "ABN format and checksum report", "Identifiers", (c, t) => IdentifierReport(t, "ABN"), true, 64),
         MakeCommand("ACNFormat", "Format ACN with spaces", "Identifiers", (c, t) => FormatACN(t), true, 64),
         MakeCommand("ACNCheck", "ACN format and checksum report", "Identifiers", (c, t) => IdentifierReport(t, "ACN"), true, 64),
