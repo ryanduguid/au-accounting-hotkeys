@@ -61,7 +61,7 @@ Picker=^!Space
 
 Save and select **Reload Script**. Press **Ctrl + Alt + Space** in an allowed application. `Picker` is disabled by default so the original 4 shortcuts work without enabling clipboard actions.
 
-1. Search by command name, category, identifier or snippet text, for example `quarter end`, `ABN` or `bank`. All words must match, ignoring case. Snippet text is searched before date tokens are expanded.
+1. Search by command name, category, identifier or snippet text, for example `quarter end`, `ABN` or `bank`. All words must match, ignoring case. If nothing matches, a word of 4 or more characters may also match with one typo, or 2 for words of 8 or more, closest first. Snippet text is searched before date tokens are expanded.
 2. Select a command with the arrow keys or mouse. Generated dates and snippets show a preview immediately.
 3. For an input command, type into **Input text** or choose **Load clipboard and preview**. Opening and searching the picker do not read the clipboard.
 4. Review the preview, then choose **Copy result**. Copy uses that exact result, even if the clipboard changes afterwards.

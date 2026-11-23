@@ -2,7 +2,7 @@
 
 Commands copy reviewed text through the picker. The four default date hotkeys also type their results directly, and the opt-in [Excel formatting shortcuts](#excel-formatting-shortcuts) format the selected cells. Examples below use a financial year ending in 2026, Q4 and, for current-date commands, a fixed example clock of 6 October 2026.
 
-Search uses literal, case-insensitive terms across the identifier, label and category. Every term must match. Search accepts up to 128 UTF-16 code units. Selecting an input command clears previously loaded text; it requires a new explicit load or manual input.
+Search uses literal, case-insensitive terms across the identifier, label and category. Every term must match. If no command matches, each term of 4 or more characters may instead match the start of a word, or a whole word, with one typo (an inserted, missing, changed or swapped character), or 2 for terms of 8 or more characters; results with fewer typos come first. Search accepts up to 128 UTF-16 code units. Selecting an input command clears previously loaded text; it requires a new explicit load or manual input.
 
 ## Selected financial year and quarter
 

@@ -103,7 +103,81 @@ FilterCommands(commands, query) {
         if matches
             result.Push(item)
     }
+    return result.Length ? result : TypoMatches(commands, terms)
+}
+
+; When nothing matches exactly, each term of 4 or more characters may instead match the start of a
+; word, or a whole word, with 1 typo, or 2 for terms of 8 or more. Fewest typos first, then catalogue order.
+TypoMatches(commands, terms) {
+    ranked := Map(), known := Map()  ; Distances already worked out, by term and word.
+    for item in commands {
+        haystack := item.Id " " item.Label " " item.Category (item.HasOwnProp("SearchText") ? " " item.SearchText : "")
+        words := StrSplit(RegExReplace(haystack, "[^\pL\pN]+", " "), " ")
+        total := 0
+        for term in terms {
+            if term = "" || InStr(haystack, term)
+                continue
+            allowed := StrLen(term) >= 8 ? 2 : 1
+            best := StrLen(term) < 4 ? 99 : TypoDistance(term, words, allowed, known)
+            if best > allowed {
+                total := -1
+                break
+            }
+            total += best
+        }
+        if total >= 0 {
+            if !ranked.Has(total)
+                ranked[total] := []
+            ranked[total].Push(item)
+        }
+    }
+    result := []
+    for , items in ranked  ; A Map lists integer keys in ascending order.
+        result.Push(items*)
     return result
+}
+
+TypoDistance(term, words, allowed, known) {
+    term := StrLower(term), best := 99, length := StrLen(term)
+    if !known.Has(term)
+        known[term] := Map()
+    seen := known[term]
+    for word in words {
+        if StrLen(word) + allowed < length || StrLen(word) > 64
+            continue
+        word := StrLower(word)
+        if !seen.Has(word) {
+            seen[word] := EditDistance(term, SubStr(word, 1, length))
+            if Abs(StrLen(word) - length) <= allowed
+                seen[word] := Min(seen[word], EditDistance(term, word))
+        }
+        best := Min(best, seen[word])
+        if best = 0
+            break
+    }
+    return best
+}
+
+; Insertions, deletions, substitutions and swaps of 2 neighbouring characters each count as 1.
+EditDistance(a, b) {
+    a := StrSplit(a), b := StrSplit(b)
+    rows := [], rows.Length := a.Length + 1
+    Loop a.Length + 1 {
+        i := A_Index - 1, row := [], row.Length := b.Length + 1
+        Loop b.Length + 1 {
+            j := A_Index - 1
+            if i = 0 || j = 0 {
+                row[j + 1] := i + j
+                continue
+            }
+            cost := a[i] == b[j] ? 0 : 1
+            row[j + 1] := Min(rows[i][j + 1] + 1, row[j] + 1, rows[i][j] + cost)
+            if i > 1 && j > 1 && a[i] == b[j - 1] && a[i - 1] == b[j]
+                row[j + 1] := Min(row[j + 1], rows[i - 1][j - 1] + 1)
+        }
+        rows[i + 1] := row
+    }
+    return rows[a.Length + 1][b.Length + 1]
 }
 
 SnippetCommand(item) {
