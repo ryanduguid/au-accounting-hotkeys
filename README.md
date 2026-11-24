@@ -73,14 +73,15 @@ Output whose cells begin with `=`, `+`, `-` or `@` triggers a confirmation befor
 
 ## Format cells in Excel
 
-Six opt-in shortcuts format the selected cells in Excel: accounting number formats with negatives in brackets, amounts in thousands, percentages, a date-format cycle starting with `dd/mm/yyyy`, blue inputs and black formulas, and Center Across Selection. Five more change values and formulas: toggle the sign, divide or multiply by 1,000, and copy formulas to paste them elsewhere exactly as written. Each is off until you give it a key under `[Hotkeys]`, for example:
+Six opt-in shortcuts format the selected cells in Excel: accounting number formats with negatives in brackets, amounts in thousands, percentages, a date-format cycle starting with `dd/mm/yyyy`, blue inputs and black formulas, and Center Across Selection. Five more change values and formulas: toggle the sign, divide or multiply by 1,000, and copy formulas to paste them elsewhere exactly as written. Seven more each take one key: a font colour cycle of blue inputs, green links to other sheets and black formulas, autofit column width and row height, indent in and out, and add or remove a decimal place. A precedent panel lists the cells the active cell's formula uses, on any sheet or open workbook, and goes to each as you move through the list. Each is off until you give it a key under `[Hotkeys]`, for example:
 
 ```ini
 ExcelAccounting=^+!a
 ExcelColourCode=^+!c
+ExcelPrecedents=^+!p
 ```
 
-They work only in Excel and Excel cannot undo them; the sign and scale shortcuts reverse with a second press or the opposite shortcut. See the [command catalogue](docs/commands.md#excel-formatting-shortcuts) for every format and change.
+They work only in Excel. Ctrl + Z undoes the indent and decimal shortcuts, which run Excel's own commands; Excel cannot undo the others, though the sign and scale shortcuts reverse with a second press or the opposite shortcut and the precedent panel changes nothing. See the [command catalogue](docs/commands.md#excel-formatting-shortcuts) for every format and change.
 
 ## Command library
 
@@ -156,7 +157,7 @@ Applications=EXCEL.EXE,WINWORD.EXE
 
 Before using `BusinessDueDate`, set `State` under `[Holidays]` to `ATO`, which counts a holiday for the whole of any State or Territory, or to one of `ACT`, `NSW`, `NT`, `QLD`, `SA`, `TAS`, `VIC` or `WA`. Its holiday list covers 1 July 2026 to 30 June 2027. It counts every day in the ATO's tables; see the [command catalogue](docs/commands.md#date-arithmetic).
 
-Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown or repeated sections and settings, and invalid values stop startup with an error message. The recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear`, `Picker` and the 11 [Excel shortcuts](#format-cells-in-excel); additional commands are available through the picker.
+Hotkeys accept a single named key, such as `Insert` or `F6`, with optional modifiers: `^` for Ctrl, `!` for Alt, `+` for Shift and `#` for Windows. For example, `YearEnd=^!e` uses Ctrl + Alt + E. Leave a hotkey value blank to disable that command. Duplicate mappings, unknown or repeated sections and settings, and invalid values stop startup with an error message. The recognised hotkey keys are `YearEnd`, `Today`, `QuarterEnd`, `FinancialYear`, `Picker` and the 19 [Excel shortcuts](#format-cells-in-excel); additional commands are available through the picker.
 
 `config.ini` is ignored by Git so your settings remain local. Keyboard layouts and application shortcuts can differ; test your mappings in the applications you use.
 

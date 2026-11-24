@@ -15,8 +15,166 @@ ExcelCommands() {
         "ExcelDivide1000", range => ScaleCells(range, "divide"),
         "ExcelMultiply1000", range => ScaleCells(range, "multiply"),
         "ExcelCopyFormulas", CopyExactFormulas,
-        "ExcelPasteFormulas", PasteExactFormulas
+        "ExcelPasteFormulas", PasteExactFormulas,
+        "ExcelFontColour", CycleFontColour,
+        "ExcelAutofitColumns", range => (range.Columns.AutoFit(), "Column width fitted"),
+        "ExcelAutofitRows", range => (range.Rows.AutoFit(), "Row height fitted"),
+        "ExcelIncreaseIndent", range => RibbonCommand(range, "IndentIncreaseExcel", "Indent increased"),
+        "ExcelDecreaseIndent", range => RibbonCommand(range, "IndentDecreaseExcel", "Indent decreased"),
+        "ExcelIncreaseDecimal", range => RibbonCommand(range, "DecimalsIncrease", "Decimal place added"),
+        "ExcelDecreaseDecimal", range => RibbonCommand(range, "DecimalsDecrease", "Decimal place removed"),
+        "ExcelPrecedents", ShowPrecedentPanel
     )
+}
+
+; Excel's own Home tab command on the active window's selection, which the range is, so Ctrl + Z
+; undoes it and Excel applies its own rules and limits.
+RibbonCommand(range, id, message) {
+    range.Application.CommandBars.ExecuteMso(id)
+    return message
+}
+
+; Blue for typed inputs, green for links to other sheets, black for formulas, then blue again. A
+; selection of mixed colours starts at blue.
+CycleFontColour(range) {
+    static cycle := [[0xFF0000, "blue"], [0x008000, "green"], [0, "black"]]  ; Excel colours are BGR.
+    current := range.Font.Color
+    next := cycle[1]
+    for colour in cycle {
+        if current is Number && current = colour[1] {
+            next := cycle[Mod(A_Index, cycle.Length) + 1]
+            break
+        }
+    }
+    range.Font.Color := next[1]
+    return "Font colour " next[2]
+}
+
+; The ranges Excel's Trace Precedents arrows reach from the cell, across sheets and open workbooks,
+; in Excel's arrow order. Excel numbers the arrows; one dashed arrow holds every reference off the
+; sheet, one link each. A link Excel cannot go to, such as a closed workbook or a hidden sheet,
+; returns to the cell, and so does every link of an arrow past the last; an error ends an arrow.
+TracePrecedents(start) {
+    app := start.Application
+    targets := [], unreachable := 0
+    updating := app.ScreenUpdating
+    app.ScreenUpdating := false
+    try {
+        start.ShowPrecedents()  ; Inside the try, so screen updating returns even if this fails.
+        try ScanArrows(start, targets, &unreachable)
+        finally {
+            try app.Goto(start)
+            finally start.ShowPrecedents(true)
+        }
+    } finally app.ScreenUpdating := updating
+    return {Targets: targets, Unreachable: unreachable}
+}
+
+; Every reference in the formula contains a run of letters, digits, dots, underscores or dollar
+; signs, so there are no more arrows, and no more links on one arrow, than the formula has runs.
+; More returns to the cell in a row than that can only be the arrows' end.
+ScanArrows(start, targets, &unreachable) {
+    RegExReplace(start.Formula, "[\w.$]+", , &runs)
+    endAfter := runs + 1
+    app := start.Application
+    home := start.Address(true, true, 1, true)
+    seen := Map()
+    Loop endAfter {
+        arrow := A_Index, missed := 0
+        Loop endAfter {
+            app.Goto(start)
+            try target := start.NavigateArrow(true, arrow, A_Index)
+            catch {
+                unreachable += missed  ; Only a real arrow ends in an error.
+                break
+            }
+            address := target.Address(true, true, 1, true)
+            if address = home {
+                if ++missed = endAfter
+                    return
+                continue
+            }
+            unreachable += missed, missed := 0
+            if !seen.Has(address)
+                seen[address] := true, targets.Push(target)
+        }
+    }
+}
+
+; A sheet name, preceded by the workbook's when it is not the starting cell's, and the address.
+PrecedentLabel(target, start) {
+    book := target.Worksheet.Parent.Name
+    prefix := book = start.Worksheet.Parent.Name ? "" : "[" book "]"
+    return prefix target.Worksheet.Name "!" target.Address(false, false)
+}
+
+; Lists the active cell's precedents; moving through the list goes to each. Enter stays there and
+; Escape returns to the starting cell. The selection only moves, so nothing in the workbook changes.
+ShowPrecedentPanel(range) {
+    start := range.Application.ActiveCell
+    if !start.HasFormula
+        return "The active cell has no formula."
+    if start.Worksheet.ProtectContents
+        return "Excel cannot trace precedents on a protected sheet."
+    traced := TracePrecedents(start)
+    skipped := traced.Unreachable ? "`n" traced.Unreachable (traced.Unreachable = 1 ? " reference" : " references")
+        . " not listed: Excel cannot go to a closed workbook or a hidden sheet." : ""
+    if !traced.Targets.Length
+        return "No precedents Excel can go to." skipped
+    PrecedentPanel.Open(start, traced.Targets, WinExist("A"))
+    count := traced.Targets.Length
+    return count (count = 1 ? " precedent" : " precedents") skipped
+}
+
+class PrecedentPanel {
+    static Window := 0
+
+    static Open(start, targets, excelWindow) {
+        this.Close()
+        window := Gui("+AlwaysOnTop +ToolWindow", "Precedents of " PrecedentLabel(start, start))
+        list := window.AddListView("w420 r" Min(targets.Length, 12) " -Multi NoSortHdr", ["Cell", "Shows"])
+        for target in targets
+            list.Add(, PrecedentLabel(target, start), target.CountLarge = 1 ? target.Text : target.CountLarge " cells")
+        list.ModifyCol(1, 220), list.ModifyCol(2, 180)
+        window.AddButton("Default", "Stay here").OnEvent("Click", (*) => this.Close(excelWindow))
+        window.AddButton("x+8", "Back to start").OnEvent("Click", (*) => this.Return(start, excelWindow))
+        window.OnEvent("Escape", (*) => this.Return(start, excelWindow))
+        window.OnEvent("Close", (*) => this.Return(start, excelWindow))
+        formula := start.Formula
+        list.OnEvent("ItemFocus", (control, item) => this.Follow(start, formula, targets[item], excelWindow))
+        this.Window := window, this.List := list
+        window.Show()
+        list.Focus()
+        list.Modify(1, "Select Focus")
+        this.Go(targets[1])  ; ItemFocus reports only keyboard and mouse moves.
+    }
+
+    ; The list is of the formula as it was when the panel opened; after an edit it may be wrong.
+    static Follow(start, formula, target, excelWindow) {
+        try current := start.Formula
+        if IsSet(current) && current == formula
+            return this.Go(target)
+        this.Close(excelWindow)
+        ToolTip("The formula has changed; open the precedents again."), SetTimer(() => ToolTip(), -2500)
+    }
+
+    static Go(target) {
+        try target.Application.Goto(target)
+        catch
+            ToolTip("Excel cannot go to that cell now."), SetTimer(() => ToolTip(), -2500)
+    }
+
+    static Return(start, excelWindow) {
+        this.Go(start)
+        this.Close(excelWindow)
+    }
+
+    static Close(excelWindow := 0) {
+        if this.Window
+            this.Window.Destroy(), this.Window := 0
+        if excelWindow && WinExist("ahk_id " excelWindow)
+            WinActivate()
+    }
 }
 
 ; Number constants and formulas returning numbers. A constant is multiplied in place; a formula is

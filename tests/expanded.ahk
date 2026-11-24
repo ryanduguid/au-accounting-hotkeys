@@ -24,6 +24,8 @@ TestExpanded() {
     TestAddSnippet()
     TestExcelFormatting()
     TestExcelValues()
+    TestExcelLayout()
+    TestPrecedentTrace()
     AssertEqual(SettingsWith([]).Keys["Picker"], "", "Picker disabled by default")
     AssertEqual(SettingsWith([["Hotkeys", "Picker", "!^Space"]]).Keys["Picker"], "^!Space", "Picker mapping normalised")
     AssertValueError(() => SettingsWith([["Hotkeys", "Picker", "Ins"]]), "Picker alias conflict rejected")
@@ -1220,7 +1222,7 @@ TestAddSnippet() {
 ; Excel formatting runs against stand-ins for a Range; a desktop run in Excel is still needed.
 TestExcelFormatting() {
     commands := ExcelCommands()
-    AssertEqual(commands.Count, 11, "Eleven Excel commands")
+    AssertEqual(commands.Count, 19, "Nineteen Excel commands")
     for name in commands
         AssertEqual(SettingDefaults()["Hotkeys"][name], "", "Excel command " name " off by default")
     AssertEqual(SettingsWith([["Hotkeys", "ExcelDates", "+!^d"]]).Keys["ExcelDates"], "^!+d", "Excel mapping normalised")
@@ -1420,4 +1422,161 @@ FakeExcel() {
     autoCorrect := {Log: []}
     autoCorrect.DefineProp("AutoFillFormulasInLists", {get: this => this.Log.Length ? this.Log[-1] : true, set: (this, value) => this.Log.Push(value)})
     return {AutoCorrect: autoCorrect}
+}
+
+TestExcelLayout() {
+    commands := ExcelCommands()
+    range := FakeLayoutRange()
+    for expected in [[0xFF0000, "blue"], [0x008000, "green"], [0, "black"], [0xFF0000, "blue"]] {
+        AssertEqual(commands["ExcelFontColour"].Call(range), "Font colour " expected[2], "Font colour cycle reports step " A_Index)
+        AssertEqual(range.Font.Color, expected[1], "Font colour cycle step " A_Index)
+    }
+    for start in [ComValue(1, 0), 0x0000FF] {
+        range.Font.Color := start
+        commands["ExcelFontColour"].Call(range)
+        AssertEqual(range.Font.Color, 0xFF0000, "Font colour cycle starts at blue from a mixed or other colour " A_Index)
+    }
+    AssertEqual(commands["ExcelAutofitColumns"].Call(range), "Column width fitted", "Autofit columns reported")
+    AssertEqual(commands["ExcelAutofitRows"].Call(range), "Row height fitted", "Autofit rows reported")
+    AssertEqual(JoinLines(range.Log, ","), "columns,rows", "Autofit fits the selection's columns, then its rows")
+    for test in [["ExcelIncreaseIndent", "IndentIncreaseExcel", "Indent increased"], ["ExcelDecreaseIndent", "IndentDecreaseExcel", "Indent decreased"],
+        ["ExcelIncreaseDecimal", "DecimalsIncrease", "Decimal place added"], ["ExcelDecreaseDecimal", "DecimalsDecrease", "Decimal place removed"]] {
+        AssertEqual(commands[test[1]].Call(range), test[3], test[1] " reported")
+        AssertEqual(range.Application.CommandBars.Log[-1], test[2], test[1] " runs Excel's own command")
+    }
+}
+
+FakeLayoutRange() {
+    range := {Font: {Color: 0}, Log: [], Application: {CommandBars: {Log: []}}}
+    range.Columns := {AutoFit: (*) => range.Log.Push("columns")}
+    range.Rows := {AutoFit: (*) => range.Log.Push("rows")}
+    range.Application.CommandBars.DefineProp("ExecuteMso", {Call: (this, id) => this.Log.Push(id)})
+    return range
+}
+
+TestPrecedentTrace() {
+    start := FakeTraceStart()
+    inputs := FakeTraceRange("Inputs!B2", "Model.xlsx", start.Application)
+    rates := FakeTraceRange("Sheet1!C3", "Rates.xlsx", start.Application)
+    block := FakeTraceRange("Calc!A2:A4", "Model.xlsx", start.Application, 3)
+    cell := FakeTraceRange("Calc!A1", "Model.xlsx", start.Application)
+    start.Arrows := [[inputs, 0, rates], [block], [cell, cell], [cell]]
+    start.Formula := "=Inputs!B2+'C:\[Closed.xlsx]Sheet1'!A1+[Rates.xlsx]Sheet1!C3+SUM(A2:A4)+A1"
+    traced := TracePrecedents(start)
+    labels := []
+    for target in traced.Targets
+        labels.Push(PrecedentLabel(target, start))
+    AssertEqual(JoinLines(labels, ";"), "Inputs!B2;[Rates.xlsx]Sheet1!C3;Calc!A2:A4;Calc!A1", "Precedents in arrow order, each once, across sheets and workbooks")
+    AssertEqual(traced.Unreachable, 1, "A link that returns to the cell counts as not listed")
+    steps := start.Application.Log
+    AssertEqual(steps[1], "show updating 0", "Arrows drawn with screen updating off")
+    AssertEqual(steps[-2] ";" steps[-1], "goto Calc!D1;hide", "Trace returns to the cell and removes its arrows")
+    AssertEqual(start.Application.ScreenUpdating, true, "Screen updating restored")
+    AssertEqual(PrecedentLabel(start, start), "Calc!D1", "Starting cell labelled by sheet")
+
+    ; More links Excel cannot go to in a row than a fixed limit would allow, then one it can.
+    start := FakeTraceStart()
+    closed := []
+    Loop 12
+        closed.Push(0), start.Formula .= "+'C:\[Closed.xlsx]Sheet1'!A" A_Index
+    closed.Push(inputs), start.Arrows := [closed, [cell]]
+    traced := TracePrecedents(start)
+    AssertEqual(traced.Targets.Length ";" traced.Unreachable, "2;12", "Twelve closed workbook links do not end the scan")
+    start.Formula := "=A1+B1"
+    start.Arrows := [[cell, cell, cell, cell]]
+    AssertEqual(TracePrecedents(start).Targets.Length, 1, "Scan bounded by the formula's references")
+
+    ; Screen updating comes back, and drawn arrows go, whatever fails.
+    start := FakeTraceStart()
+    start.DefineProp("ShowPrecedents", {Call: (*) => NoCellsFound()})
+    AssertEqual(TraceFails(start), true, "Arrow drawing failure reported")
+    AssertEqual(start.Application.ScreenUpdating, true, "Screen updating restored after arrows fail")
+    start := FakeTraceStart()
+    start.Arrows := [[cell]]
+    start.Application.DefineProp("Goto", {Call: (this, target) => (this.Log.Push("goto " target.Name), target = start && this.Log.Length > 1 ? NoCellsFound() : 0)})
+    AssertEqual(TraceFails(start), true, "Return to the cell failure reported")
+    AssertEqual(start.Application.Log[-1] ";" start.Application.ScreenUpdating, "hide;1", "Arrows removed and screen updating restored after a failed return")
+
+    start := FakeTraceStart()
+    start.Arrows := [[0]]
+    AssertEqual(ShowPrecedentPanel(start), "No precedents Excel can go to.`n1 reference not listed: Excel cannot go to a closed workbook or a hidden sheet.", "Only a closed workbook link refused")
+    start := FakeTraceStart()
+    start.Arrows := []
+    AssertEqual(ShowPrecedentPanel(start), "No precedents Excel can go to.", "Formula without references refused")
+    start := FakeTraceStart()
+    start.HasFormula := false
+    AssertEqual(ShowPrecedentPanel(start), "The active cell has no formula.", "Constant refused")
+    start := FakeTraceStart()
+    start.Worksheet.ProtectContents := true
+    AssertEqual(ShowPrecedentPanel(start), "Excel cannot trace precedents on a protected sheet.", "Protected sheet refused")
+    AssertEqual(start.Application.Log.Length, 0, "Protected sheet left untouched")
+}
+
+TraceFails(start) {
+    try TracePrecedents(start)
+    catch
+        return true
+    return false
+}
+
+; Arrows lists each arrow's links; 0 is a link Excel cannot go to. Past the last arrow every link
+; returns to the cell, and past an arrow's last link Excel throws, as real Excel does.
+FakeTraceStart() {
+    app := {Log: [], ScreenUpdating: true}
+    app.DefineProp("Goto", {Call: (this, target) => this.Log.Push("goto " target.Name)})
+    start := FakeTraceRange("Calc!D1", "Model.xlsx", app)
+    start.HasFormula := true, start.Arrows := [], start.Formula := "=Inputs!B2+A1"
+    app.ActiveCell := start
+    start.DefineProp("ShowPrecedents", {Call: (this, remove := false) => app.Log.Push(remove ? "hide" : "show updating " app.ScreenUpdating)})
+    start.DefineProp("NavigateArrow", {Call: FakeNavigateArrow})
+    return start
+}
+
+FakeNavigateArrow(start, toward, arrow, link) {
+    if arrow > start.Arrows.Length
+        return start
+    if link > start.Arrows[arrow].Length
+        throw Error("NavigateArrow method of Range class failed")
+    return start.Arrows[arrow][link] || start
+}
+
+FakeTraceRange(name, book, app, count := 1) {
+    parts := StrSplit(name, "!")
+    range := {Name: name, Worksheet: {Name: parts[1], Parent: {Name: book}, ProtectContents: false}, Application: app, CountLarge: count, Text: "1"}
+    range.DefineProp("Address", {Call: (this, rowAbsolute, columnAbsolute, style := 1, external := false) => (external ? "[" book "]" name : parts[2])})
+    return range
+}
+
+; Drives the precedent panel with the keyboard against stand-in ranges.
+TestPrecedentPanel() {
+    start := FakeTraceStart()
+    targets := [FakeTraceRange("Inputs!B2", "Model.xlsx", start.Application), FakeTraceRange("Calc!A1", "Model.xlsx", start.Application)]
+    steps := start.Application.Log
+    for test in [["{Escape}", "goto Calc!D1", "Escape returns to the starting cell"], ["{Enter}", "goto Calc!A1", "Enter stays at the precedent"]] {
+        before := steps.Length
+        PrecedentPanel.Open(start, targets, 0)
+        try {
+            window := PrecedentPanel.Window.Hwnd
+            if !WinWaitActive("ahk_id " window, , 3)
+                throw Error("Precedent panel could not receive focus.")
+            AssertEqual(steps.Length - before ";" steps[-1], "1;goto Inputs!B2", "Panel opens at the first precedent once " A_Index)
+            ControlSend("{Down}", PrecedentPanel.List)
+            Sleep(100)
+            AssertEqual(steps[-1], "goto Calc!A1", "Down arrow goes to the next precedent " A_Index)
+            ControlSend(test[1], PrecedentPanel.List)
+            Sleep(100)
+            AssertEqual(steps[-1], test[2], test[3])
+            AssertEqual(WinExist("ahk_id " window), 0, "Panel closed " A_Index)
+        } finally PrecedentPanel.Close()
+    }
+    PrecedentPanel.Open(start, targets, 0)
+    try {
+        window := PrecedentPanel.Window.Hwnd
+        if !WinWaitActive("ahk_id " window, , 3)
+            throw Error("Precedent panel could not receive focus.")
+        start.Formula := "=Inputs!B3+A1"
+        ControlSend("{Down}", PrecedentPanel.List)
+        Sleep(100)
+        AssertEqual(steps[-1] ";" WinExist("ahk_id " window), "goto Inputs!B2;0", "An edited formula closes the panel instead of following the old list")
+    } finally PrecedentPanel.Close(), ToolTip()
 }
