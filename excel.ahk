@@ -55,43 +55,50 @@ CycleFontColour(range) {
 ; sheet, one link each. A link Excel cannot go to, such as a closed workbook or a hidden sheet,
 ; returns to the cell, and so does every link of an arrow past the last; an error ends an arrow.
 TracePrecedents(start) {
-    static endAfter := 10  ; links in a row that return to the cell before the arrows are taken to end
     app := start.Application
-    home := start.Address(true, true, 1, true)
-    targets := [], seen := Map(), unreachable := 0
+    targets := [], unreachable := 0
     updating := app.ScreenUpdating
     app.ScreenUpdating := false
-    start.ShowPrecedents()
     try {
-        Loop 1000 {
-            arrow := A_Index, missed := 0
-            Loop 1000 {
-                app.Goto(start)
-                try target := start.NavigateArrow(true, arrow, A_Index)
-                catch {
-                    unreachable += missed
-                    missed := 0
-                    break
-                }
-                address := target.Address(true, true, 1, true)
-                if address = home {
-                    if ++missed = endAfter
-                        break
-                    continue
-                }
-                unreachable += missed, missed := 0
-                if !seen.Has(address)
-                    seen[address] := true, targets.Push(target)
-            }
-            if missed = endAfter
-                break
+        start.ShowPrecedents()  ; Inside the try, so screen updating returns even if this fails.
+        try ScanArrows(start, targets, &unreachable)
+        finally {
+            try app.Goto(start)
+            finally start.ShowPrecedents(true)
         }
-    } finally {
-        app.Goto(start)
-        start.ShowPrecedents(true)
-        app.ScreenUpdating := updating
-    }
+    } finally app.ScreenUpdating := updating
     return {Targets: targets, Unreachable: unreachable}
+}
+
+; Every reference in the formula contains a run of letters, digits, dots, underscores or dollar
+; signs, so there are no more arrows, and no more links on one arrow, than the formula has runs.
+; More returns to the cell in a row than that can only be the arrows' end.
+ScanArrows(start, targets, &unreachable) {
+    RegExReplace(start.Formula, "[\w.$]+", , &runs)
+    endAfter := runs + 1
+    app := start.Application
+    home := start.Address(true, true, 1, true)
+    seen := Map()
+    Loop endAfter {
+        arrow := A_Index, missed := 0
+        Loop endAfter {
+            app.Goto(start)
+            try target := start.NavigateArrow(true, arrow, A_Index)
+            catch {
+                unreachable += missed  ; Only a real arrow ends in an error.
+                break
+            }
+            address := target.Address(true, true, 1, true)
+            if address = home {
+                if ++missed = endAfter
+                    return
+                continue
+            }
+            unreachable += missed, missed := 0
+            if !seen.Has(address)
+                seen[address] := true, targets.Push(target)
+        }
+    }
 }
 
 ; A sheet name, preceded by the workbook's when it is not the starting cell's, and the address.
@@ -133,12 +140,22 @@ class PrecedentPanel {
         window.AddButton("x+8", "Back to start").OnEvent("Click", (*) => this.Return(start, excelWindow))
         window.OnEvent("Escape", (*) => this.Return(start, excelWindow))
         window.OnEvent("Close", (*) => this.Return(start, excelWindow))
-        list.OnEvent("ItemFocus", (control, item) => this.Go(targets[item]))
+        formula := start.Formula
+        list.OnEvent("ItemFocus", (control, item) => this.Follow(start, formula, targets[item], excelWindow))
         this.Window := window, this.List := list
         window.Show()
         list.Focus()
         list.Modify(1, "Select Focus")
         this.Go(targets[1])  ; ItemFocus reports only keyboard and mouse moves.
+    }
+
+    ; The list is of the formula as it was when the panel opened; after an edit it may be wrong.
+    static Follow(start, formula, target, excelWindow) {
+        try current := start.Formula
+        if IsSet(current) && current == formula
+            return this.Go(target)
+        this.Close(excelWindow)
+        ToolTip("The formula has changed; open the precedents again."), SetTimer(() => ToolTip(), -2500)
     }
 
     static Go(target) {

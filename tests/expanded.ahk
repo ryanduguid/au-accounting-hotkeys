@@ -1461,6 +1461,7 @@ TestPrecedentTrace() {
     block := FakeTraceRange("Calc!A2:A4", "Model.xlsx", start.Application, 3)
     cell := FakeTraceRange("Calc!A1", "Model.xlsx", start.Application)
     start.Arrows := [[inputs, 0, rates], [block], [cell, cell], [cell]]
+    start.Formula := "=Inputs!B2+'C:\[Closed.xlsx]Sheet1'!A1+[Rates.xlsx]Sheet1!C3+SUM(A2:A4)+A1"
     traced := TracePrecedents(start)
     labels := []
     for target in traced.Targets
@@ -1472,6 +1473,29 @@ TestPrecedentTrace() {
     AssertEqual(steps[-2] ";" steps[-1], "goto Calc!D1;hide", "Trace returns to the cell and removes its arrows")
     AssertEqual(start.Application.ScreenUpdating, true, "Screen updating restored")
     AssertEqual(PrecedentLabel(start, start), "Calc!D1", "Starting cell labelled by sheet")
+
+    ; More links Excel cannot go to in a row than a fixed limit would allow, then one it can.
+    start := FakeTraceStart()
+    closed := []
+    Loop 12
+        closed.Push(0), start.Formula .= "+'C:\[Closed.xlsx]Sheet1'!A" A_Index
+    closed.Push(inputs), start.Arrows := [closed, [cell]]
+    traced := TracePrecedents(start)
+    AssertEqual(traced.Targets.Length ";" traced.Unreachable, "2;12", "Twelve closed workbook links do not end the scan")
+    start.Formula := "=A1+B1"
+    start.Arrows := [[cell, cell, cell, cell]]
+    AssertEqual(TracePrecedents(start).Targets.Length, 1, "Scan bounded by the formula's references")
+
+    ; Screen updating comes back, and drawn arrows go, whatever fails.
+    start := FakeTraceStart()
+    start.DefineProp("ShowPrecedents", {Call: (*) => NoCellsFound()})
+    AssertEqual(TraceFails(start), true, "Arrow drawing failure reported")
+    AssertEqual(start.Application.ScreenUpdating, true, "Screen updating restored after arrows fail")
+    start := FakeTraceStart()
+    start.Arrows := [[cell]]
+    start.Application.DefineProp("Goto", {Call: (this, target) => (this.Log.Push("goto " target.Name), target = start && this.Log.Length > 1 ? NoCellsFound() : 0)})
+    AssertEqual(TraceFails(start), true, "Return to the cell failure reported")
+    AssertEqual(start.Application.Log[-1] ";" start.Application.ScreenUpdating, "hide;1", "Arrows removed and screen updating restored after a failed return")
 
     start := FakeTraceStart()
     start.Arrows := [[0]]
@@ -1488,13 +1512,20 @@ TestPrecedentTrace() {
     AssertEqual(start.Application.Log.Length, 0, "Protected sheet left untouched")
 }
 
+TraceFails(start) {
+    try TracePrecedents(start)
+    catch
+        return true
+    return false
+}
+
 ; Arrows lists each arrow's links; 0 is a link Excel cannot go to. Past the last arrow every link
 ; returns to the cell, and past an arrow's last link Excel throws, as real Excel does.
 FakeTraceStart() {
     app := {Log: [], ScreenUpdating: true}
     app.DefineProp("Goto", {Call: (this, target) => this.Log.Push("goto " target.Name)})
     start := FakeTraceRange("Calc!D1", "Model.xlsx", app)
-    start.HasFormula := true, start.Arrows := []
+    start.HasFormula := true, start.Arrows := [], start.Formula := "=Inputs!B2+A1"
     app.ActiveCell := start
     start.DefineProp("ShowPrecedents", {Call: (this, remove := false) => app.Log.Push(remove ? "hide" : "show updating " app.ScreenUpdating)})
     start.DefineProp("NavigateArrow", {Call: FakeNavigateArrow})
@@ -1538,4 +1569,14 @@ TestPrecedentPanel() {
             AssertEqual(WinExist("ahk_id " window), 0, "Panel closed " A_Index)
         } finally PrecedentPanel.Close()
     }
+    PrecedentPanel.Open(start, targets, 0)
+    try {
+        window := PrecedentPanel.Window.Hwnd
+        if !WinWaitActive("ahk_id " window, , 3)
+            throw Error("Precedent panel could not receive focus.")
+        start.Formula := "=Inputs!B3+A1"
+        ControlSend("{Down}", PrecedentPanel.List)
+        Sleep(100)
+        AssertEqual(steps[-1] ";" WinExist("ahk_id " window), "goto Inputs!B2;0", "An edited formula closes the panel instead of following the old list")
+    } finally PrecedentPanel.Close(), ToolTip()
 }
