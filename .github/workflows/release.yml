@@ -21,13 +21,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Require a version tag on main's history
+      - name: Require a version tag on main's history and matching CITATION.cff metadata
         if: github.event_name == 'push'
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          grep -Fxq "version: ${RELEASE_TAG#v}" CITATION.cff
+          grep -Fq "/blob/${RELEASE_TAG}/LICENSE" CITATION.cff
 
   tests:
     needs: validate
