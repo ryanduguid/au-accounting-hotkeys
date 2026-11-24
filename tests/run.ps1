@@ -16,13 +16,15 @@ $stderrPath = Join-Path $runDirectory 'stderr.txt'
 $testPath = Join-Path $PSScriptRoot 'test.ahk'
 $arguments = @('/ErrorStdOut', ('"' + $testPath + '"'))
 if ($UI) { $arguments += '--ui' }
+# UI tests drive real windows, so a loaded desktop slows them; the cap still kills a hung run.
+$timeoutSeconds = if ($UI) { 60 } else { 20 }
 
 try {
     $process = Start-Process -FilePath $AutoHotkey -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
     $null = $process.Handle
-    if (-not $process.WaitForExit(20000)) {
+    if (-not $process.WaitForExit($timeoutSeconds * 1000)) {
         Stop-Process -Id $process.Id
-        throw 'AutoHotkey tests exceeded 20 seconds.'
+        throw "AutoHotkey tests exceeded $timeoutSeconds seconds."
     }
     $process.WaitForExit()
     $stdout = Get-Content -LiteralPath $stdoutPath -Raw
