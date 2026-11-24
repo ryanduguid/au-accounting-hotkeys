@@ -188,7 +188,7 @@ See [custom snippets](../README.md#customise-snippets) for the token list, local
 
 ## Excel formatting shortcuts
 
-These shortcuts change the selected cells in the active Excel window instead of copying text. Each is off until you give it a key under `[Hotkeys]` in `config.ini`, works only when `EXCEL.EXE` is active (and in the `[Scope]` list, if set) and shows what it applied in a tooltip. Excel cannot undo these changes, so try them on a copy first. Pressing a cycling shortcut again moves to the next format; a selection whose format is not in the cycle starts at the first.
+These shortcuts change the selected cells in the active Excel window instead of copying text. Each is off until you give it a key under `[Hotkeys]` in `config.ini`, works only when `EXCEL.EXE` is active (and in the `[Scope]` list, if set) and shows what it applied in a tooltip. Excel cannot undo most of these changes, so try them on a copy first. Pressing a cycling shortcut again moves to the next format; a selection whose format is not in the cycle starts at the first.
 
 | Setting | Behaviour |
 | --- | --- |
@@ -214,3 +214,20 @@ These 5 shortcuts change cell values or formulas, so the same cautions apply: ea
 | `ExcelPasteFormulas` | Writes the remembered formulas from the selected cell, in the same layout and without adjusting any reference, so `=E2*$E$1` stays `=E2*$E$1`. Cells that held no formula in the copied block are left unchanged. |
 
 The sign and scale shortcuts skip text, empty cells, errors, formulas that return text, cells with a date or time number format, cells inside a spilled array and legacy array formulas. A constant is rounded to Excel's 15 significant digits after dividing or multiplying, so dividing and then multiplying returns the original number. A wrapped formula is unwrapped only when the whole formula is the wrapped expression. The sign and scale shortcuts act on at most 10,000 numbers and formulas, and copying on at most 10,000 cells; a larger selection is refused before anything changes. In a table, only the selected cells change: whilst these shortcuts write, they turn off Excel's option to fill formulas down a table's calculated column, then restore it. A protected sheet stops a change at the first cell it cannot write, so cells already changed stay changed.
+
+### Layout, colour and precedents
+
+These 8 shortcuts are also off until given a key and work only in `EXCEL.EXE`.
+
+| Setting | Behaviour |
+| --- | --- |
+| `ExcelFontColour` | Cycles the font colour of the selected cells: blue for typed inputs, green for links to other sheets, black for formulas, then blue again. A selection of mixed or other colours starts at blue. Excel cannot undo it. |
+| `ExcelAutofitColumns` | Fits the width of the selected columns to the selected cells' contents, as Excel's AutoFit Column Width does. Select whole columns to fit every cell in them. Excel cannot undo it. |
+| `ExcelAutofitRows` | Fits the height of the selected rows in the same way. Excel cannot undo it. |
+| `ExcelIncreaseIndent` | Runs Excel's own Increase Indent command on the selection, so Ctrl + Z undoes it. |
+| `ExcelDecreaseIndent` | Runs Excel's own Decrease Indent command. |
+| `ExcelIncreaseDecimal` | Runs Excel's own Increase Decimal command, so a General `1.5` shows as `1.50`; Ctrl + Z undoes it. |
+| `ExcelDecreaseDecimal` | Runs Excel's own Decrease Decimal command. |
+| `ExcelPrecedents` | Opens a panel listing the cells the active cell's formula refers to, on its own sheet, other sheets and other open workbooks, with what each shows. The panel goes to the first; the Up and Down arrows go to each in turn. Enter or **Stay here** closes the panel at that cell; Escape, **Back to start** or closing the panel returns to the starting cell. |
+
+The precedent panel follows Excel's Trace Precedents arrows, so it lists what those arrows reach: direct precedents only, one entry per referenced range, and nothing that `INDIRECT` or `OFFSET` builds from text. It draws the arrows with screen updating off, removes them again and leaves the workbook unchanged; only the selection moves. Excel cannot go to a cell in a closed workbook or on a hidden sheet, so those references are left out and the tooltip says how many. A cell without a formula, a formula without cell references and a protected sheet are refused with a tooltip.

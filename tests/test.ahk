@@ -59,6 +59,7 @@ try {
         TestPickerHotkeyScope()
         TestPickerManualLimits()
         TestPickerTargetBoundary()
+        TestPrecedentPanel()
     }
     FileAppend("PASS: " checks " checks`n", "*")
     ExitApp(0)

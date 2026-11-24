@@ -27,6 +27,8 @@ The 6 Excel formatting shortcuts are off until a key is set for each in `config.
 
 Five more Excel shortcuts, also off until given a key, change the selected cells' values or formulas: `ExcelToggleSign`, `ExcelDivide1000` and `ExcelMultiply1000` change number constants and wrap formulas that return numbers, and `ExcelPasteFormulas` writes formulas that `ExcelCopyFormulas` remembered in the script's memory. They use no clipboard and touch no other workbook. Whilst they write, they turn off Excel's `AutoFillFormulasInLists` option, so a formula written into one cell of a table is not copied down the whole column, and restore its earlier value afterwards (`WriteCells`).
 
+8 more, also off until given a key, set the font colour, fit column widths or row heights, or run Excel's own Increase and Decrease Indent and Decimal commands on the selection (`RibbonCommand`). `ExcelPrecedents` changes no cell: it shows and then removes Excel's tracer arrows for the active cell, moves the selection to each precedent the user picks in its panel and back (`TracePrecedents`, `PrecedentPanel`).
+
 ## What it stores
 
 - On the first run, it copies `config.example.ini` to `config.ini` beside the script. It never writes to `config.ini` afterwards; users edit it themselves.
