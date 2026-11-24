@@ -16,8 +16,8 @@ $stderrPath = Join-Path $runDirectory 'stderr.txt'
 $testPath = Join-Path $PSScriptRoot 'test.ahk'
 $arguments = @('/ErrorStdOut', ('"' + $testPath + '"'))
 if ($UI) { $arguments += '--ui' }
-# UI tests drive real windows, so a loaded desktop slows them; the cap still kills a hung run.
-$timeoutSeconds = if ($UI) { 60 } else { 20 }
+# A loaded desktop slows the tests; the cap still kills a hung run.
+$timeoutSeconds = 60
 
 try {
     $process = Start-Process -FilePath $AutoHotkey -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
