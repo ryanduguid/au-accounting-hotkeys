@@ -16,7 +16,7 @@ All notable changes to this repository are recorded here. The format follows [Ke
 ### Changed
 
 - Relicensed Ryan Duguid's original work under Apache-2.0. Earlier releases keep their original terms.
-- `tests\run.ps1 -UI` stops a hung test run after 60 seconds instead of 20, so a busy desktop no longer fails it. Runs without `-UI` keep the 20-second limit.
+- `tests\run.ps1` stops a hung test run after 60 seconds instead of 20, with or without `-UI`, so a busy desktop no longer fails it.
 
 ## [1.1.0] - 2026-11-18
 
