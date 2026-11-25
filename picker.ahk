@@ -264,8 +264,8 @@ class CommandPicker {
         dialog.AddText("w480", "&Trigger: the label in the picker, 1 to 40 characters without spaces")
         trigger := dialog.AddEdit("w480 Limit41")
         dialog.AddText("w480", "&Text, saved as typed")
-        ; Edit controls store line breaks as CRLF, so 16,384 normalised characters need up to 32,768 UTF-16 units; 32,769 preserves oversize pastes intact.
-        body := dialog.AddEdit("w480 r8 Limit32769")
+        ; Edit controls store line breaks as CRLF, so 16,384 normalised characters need up to 32,768 UTF-16 units; 32,770 preserves a 16,385-CRLF paste without clipping mid-CRLF.
+        body := dialog.AddEdit("w480 r8 Limit32770")
         status := dialog.AddText("w480 r2", "Saved to snippets.local\Added.ahk in AutoHotkey hotstrings format.")
         dialog.AddButton("w100", "&Save").OnEvent("Click", (*) => this.AddSnippet(trigger.Value, body.Value, status) && dialog.Destroy())
         dialog.AddButton("x+10 w100", "Cancel").OnEvent("Click", (*) => dialog.Destroy())

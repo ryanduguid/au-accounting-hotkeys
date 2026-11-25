@@ -1222,6 +1222,10 @@ TestAddSnippet() {
             AssertEqual(palette.AddSnippet("multilinecap", add.Body.Value, add.Status), true, "Multiline snippet at 16,384 normalised chars saves intact")
             ReplaceNativeEdit(add.Body, RepeatText("x`r`n", 5462)) ; 5462 * 3 = 16,386 Edit units -> 10,924 normalised chars
             AssertEqual(StrLen(add.Body.Value), 10924, "Add snippet body preserves multiline CRLF above 16,384 Edit units")
+            ReplaceNativeEdit(add.Body, RepeatText("`r`n", 16385)) ; 32,770 Edit units -> 16,385 normalised newlines without clipping mid-CRLF
+            AssertEqual(StrLen(add.Body.Value), 16385, "Add snippet body preserves 16,385 normalised newlines intact")
+            AssertEqual(InStr(add.Body.Value, "`r"), 0, "Add snippet body does not clip mid-CRLF")
+            AssertEqual(palette.AddSnippet("crlfover", add.Body.Value, add.Status), false, "Oversize 16,385-newline body refused rather than truncated")
         } finally add.Dialog.Destroy()
 
         ; One bundled file and 99 local files: a new Added.ahk would push one past the 100-file limit.
