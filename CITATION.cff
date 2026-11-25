@@ -6,11 +6,11 @@ authors:
   - family-names: Duguid
     given-names: Ryan
 abstract: "Windows AutoHotkey v2 shortcuts for Australian accountants: financial-year dates, a searchable picker of period labels, ABN and ACN formatting, and draft workpaper snippets."
-version: 1.1.0
-date-released: 2026-11-18
+version: 1.2.0
+date-released: 2026-11-25
 repository-code: "https://github.com/ryanduguid/au-accounting-hotkeys"
 url: "https://duguid.com.au/"
-license-url: "https://github.com/ryanduguid/au-accounting-hotkeys/blob/v1.1.0/LICENSE"
+license-url: "https://github.com/ryanduguid/au-accounting-hotkeys/blob/v1.2.0/LICENSE"
 keywords:
   - accounting
   - australia
