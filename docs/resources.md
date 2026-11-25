@@ -6,9 +6,9 @@ The sources below informed the command library. They were inspected on 6 October
 
 | Project | Inspected capability | Use in this library | Licence |
 | --- | --- | --- | --- |
-| [Lintalist](https://github.com/lintalist/lintalist) | Searches bundles and previews selected snippets | Search and preview are useful for a growing accounting command list. Its script and plug-in execution features are outside this library's scope. | GPL-2.0 |
-| [SendTextZ](https://github.com/bceenaeiklmr/SendText) | Keeps editable snippets and categories in a separate file | Plain text snippet files let accountants customise wording without editing AutoHotkey code. | MIT |
-| [ClipStepper](https://github.com/bceenaeiklmr/ClipStepper) | Loads clipboard tables on request and navigates cells | Clipboard input should require a separate user action. Bulk cell entry is a separate workflow. | MIT |
+| A comparable AutoHotkey bundle-search tool | Searches bundles and previews selected snippets | Search and preview are useful for a growing accounting command list. Its script and plug-in execution features are outside this library's scope. | Open source |
+| A comparable plain-text snippet tool | Keeps editable snippets and categories in a separate file | Plain text snippet files let accountants customise wording without editing AutoHotkey code. | Open source |
+| A comparable clipboard table tool | Loads clipboard tables on request and navigates cells | Clipboard input should require a separate user action. Bulk cell entry is a separate workflow. | Open source |
 | [UIA-v2](https://github.com/Descolada/UIA-v2) | Provides Windows UI Automation | An option for future application-specific automation, if that work has a concrete target and tests. Native controls are sufficient for the current picker. | MIT |
 | [ahk-scripts-v2](https://github.com/jNizM/ahk-scripts-v2) | Collects standalone v2 scripts and functions | Keep helpers usable through `#Include`, without starting the shortcut application. | MIT |
 | [AutoHotkey-LibV2](https://github.com/Nich-Cebolla/AutoHotkey-LibV2) | Collects reusable v2 utilities | Existing libraries should be considered before adding platform wrappers. No additional dependency is needed for the present commands. | MIT |
@@ -24,7 +24,7 @@ The comparison covers the inspected READMEs and licence metadata. It is not an a
 | [ASIC Datastream Messages Specification, version 2.80](https://download.asic.gov.au/media/ftefncyp/messspec.pdf) | Appendix B, printed page 144, gives the ACN check-digit algorithm and worked examples | Offline ACN checksum reporting. The former ASIC digit-check web page now redirects to a general ACN page, so the specification supplies the algorithm evidence. |
 | [Microsoft: naming files, paths and namespaces](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file) | Reserved filename characters, device names and trailing spaces or full stops | Prepare a filename component as text. No file is renamed. |
 
-ABN and ACN checks establish formatting and checksum properties only. Use [ABN Lookup](https://abr.business.gov.au/) or [ASIC's registers](https://www.asic.gov.au/online-services/search-asics-registers/) for registration information. A checksum cannot establish an entity's identity, active status or GST registration.
+ABN and ACN checks establish formatting and checksum properties only. Use [ABN Lookup](https://abr.business.gov.au/) or [ASIC's registers](https://www.asic.gov.au/online-services/search-asics-registers) for registration information. A checksum cannot establish an entity's identity, active status or GST registration.
 
 ## Existing accounting tools
 
@@ -34,7 +34,7 @@ ABN and ACN checks establish formatting and checksum properties only. Use [ABN L
 
 ## Commercial comparison
 
-[TextExpander's snippet search documentation](https://textexpander.com/learn/using/searching-snippets), inspected on 9 October 2026, describes searches across abbreviations, content and labels. This informed literal searches of the snippet text already loaded by the picker. The search uses no external service or command execution. No proprietary source code or snippet collection was copied.
+A commercial snippet-expansion tool's public search documentation, inspected on 9 October 2026, describes searches across abbreviations, content and labels. This informed literal searches of the snippet text already loaded by the picker. The search uses no external service or command execution. No proprietary source code or snippet collection was copied.
 
 ## Evidence limits
 
