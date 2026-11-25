@@ -4,6 +4,8 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-25
+
 ### Added
 
 - Typo-tolerant picker search: when no command matches exactly, words of 4 or more characters also match with one typo, or 2 for words of 8 or more, closest first.
@@ -15,8 +17,15 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ### Changed
 
-- Relicensed Ryan Duguid's original work under Apache-2.0. Earlier releases keep their original terms.
-- `tests\run.ps1` stops a hung test run after 60 seconds instead of 20, with or without `-UI`, so a busy desktop no longer fails it.
+- Relicensed Ryan Duguid's original work under Apache-2.0. Earlier releases keep their original terms. (#71)
+- `tests\run.ps1` stops a hung test run after 60 seconds instead of 20, with or without `-UI`, so a busy desktop no longer fails it. (#80, #81)
+- `tests\check-readme.ps1` and `.github\workflows\release.yml` check that `CITATION.cff` `license-url` matches the declared `v<version>` tag. (#82, #83)
+
+### Fixed
+
+- `ExcelCopyFormulas` and `ExcelPasteFormulas` refuse multi-area selections and abort without changing anything when a copied formula or overwritten destination cell is a legacy array formula, and `ExcelPasteFormulas` validates destination block dimensions and sheet-edge bounds before writing. (#83)
+- `PrecedentPanel` 'Stay here' focuses the navigated target workbook window instead of returning focus to the starting window, and `Close` clears `Window` before destroying the panel. (#83)
+- **Add snippet** Edit limits (`Limit41` and `Limit32770` UTF-16 units for CRLF line breaks) keep oversize or 16,385-newline pastes intact so validation refuses them instead of silently truncating. (#83)
 
 ## [1.1.0] - 2026-11-18
 

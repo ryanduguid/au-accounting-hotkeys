@@ -23,12 +23,12 @@ Type Australian workpaper dates and use a searchable library of period labels, d
 ## Start
 
 1. Install [AutoHotkey v2](https://www.autohotkey.com/) on Windows, or run `winget install --id AutoHotkey.AutoHotkey --exact` in a terminal.
-2. From the [latest release](https://github.com/ryanduguid/au-accounting-hotkeys/releases/latest), download `au-accounting-hotkeys-v1.1.0.zip` and `SHA256SUMS` into one folder. In PowerShell in that folder, check that the 2 hashes shown match, then extract the zip:
+2. From the [latest release](https://github.com/ryanduguid/au-accounting-hotkeys/releases/latest), download `au-accounting-hotkeys-v1.2.0.zip` and `SHA256SUMS` into one folder. In PowerShell in that folder, check that the 2 hashes shown match, then extract the zip:
 
    ```powershell
-   (Get-FileHash .\au-accounting-hotkeys-v1.1.0.zip -Algorithm SHA256).Hash.ToLower()
+   (Get-FileHash .\au-accounting-hotkeys-v1.2.0.zip -Algorithm SHA256).Hash.ToLower()
    Get-Content .\SHA256SUMS
-   Expand-Archive .\au-accounting-hotkeys-v1.1.0.zip -DestinationPath .
+   Expand-Archive .\au-accounting-hotkeys-v1.2.0.zip -DestinationPath .
    ```
 
 3. Double-click `accounting-hotkeys.ahk` in the extracted `au-accounting-hotkeys` folder.
