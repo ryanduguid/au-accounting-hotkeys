@@ -28,8 +28,11 @@ jobs:
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
-          grep -Fxq "version: ${RELEASE_TAG#v}" CITATION.cff
-          grep -Fq "/blob/${RELEASE_TAG}/LICENSE" CITATION.cff
+          VER_RE="${RELEASE_TAG#v}"
+          VER_RE="${VER_RE//./\\.}"
+          TAG_RE="${RELEASE_TAG//./\\.}"
+          tr -d '\r' < CITATION.cff | grep -Eq "^version:[[:space:]]*['\"]?${VER_RE}['\"]?[[:space:]]*$"
+          tr -d '\r' < CITATION.cff | grep -Eq "^license-url:[[:space:]]*['\"]?https://github\\.com/ryanduguid/au-accounting-hotkeys/blob/${TAG_RE}/LICENSE['\"]?[[:space:]]*$"
 
   tests:
     needs: validate

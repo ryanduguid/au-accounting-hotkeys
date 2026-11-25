@@ -6,9 +6,9 @@ The sources below informed the command library. They were inspected on 6 October
 
 | Project | Inspected capability | Use in this library | Licence |
 | --- | --- | --- | --- |
-| A comparable AutoHotkey bundle-search tool | Searches bundles and previews selected snippets | Search and preview are useful for a growing accounting command list. Its script and plug-in execution features are outside this library's scope. | GPL-2.0 |
-| A comparable plain-text snippet tool | Keeps editable snippets and categories in a separate file | Plain text snippet files let accountants customise wording without editing AutoHotkey code. | MIT |
-| A comparable clipboard table tool | Loads clipboard tables on request and navigates cells | Clipboard input should require a separate user action. Bulk cell entry is a separate workflow. | MIT |
+| A comparable AutoHotkey bundle-search tool | Searches bundles and previews selected snippets | Search and preview are useful for a growing accounting command list. Its script and plug-in execution features are outside this library's scope. | Open source |
+| A comparable plain-text snippet tool | Keeps editable snippets and categories in a separate file | Plain text snippet files let accountants customise wording without editing AutoHotkey code. | Open source |
+| A comparable clipboard table tool | Loads clipboard tables on request and navigates cells | Clipboard input should require a separate user action. Bulk cell entry is a separate workflow. | Open source |
 | [UIA-v2](https://github.com/Descolada/UIA-v2) | Provides Windows UI Automation | An option for future application-specific automation, if that work has a concrete target and tests. Native controls are sufficient for the current picker. | MIT |
 | [ahk-scripts-v2](https://github.com/jNizM/ahk-scripts-v2) | Collects standalone v2 scripts and functions | Keep helpers usable through `#Include`, without starting the shortcut application. | MIT |
 | [AutoHotkey-LibV2](https://github.com/Nich-Cebolla/AutoHotkey-LibV2) | Collects reusable v2 utilities | Existing libraries should be considered before adding platform wrappers. No additional dependency is needed for the present commands. | MIT |
