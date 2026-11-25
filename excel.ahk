@@ -136,7 +136,7 @@ class PrecedentPanel {
         for target in targets
             list.Add(, PrecedentLabel(target, start), target.CountLarge = 1 ? target.Text : target.CountLarge " cells")
         list.ModifyCol(1, 220), list.ModifyCol(2, 180)
-        window.AddButton("Default", "Stay here").OnEvent("Click", (*) => this.Close(excelWindow))
+        window.AddButton("Default", "Stay here").OnEvent("Click", (*) => this.Stay(targets[Max(list.GetNext(0, "Focused"), 1)], excelWindow))
         window.AddButton("x+8", "Back to start").OnEvent("Click", (*) => this.Return(start, excelWindow))
         window.OnEvent("Escape", (*) => this.Return(start, excelWindow))
         window.OnEvent("Close", (*) => this.Return(start, excelWindow))
@@ -164,14 +164,29 @@ class PrecedentPanel {
             ToolTip("Excel cannot go to that cell now."), SetTimer(() => ToolTip(), -2500)
     }
 
+    static Stay(target, excelWindow) {
+        this.Close(this.TargetWindow(target, excelWindow))
+    }
+
+    static TargetWindow(target, excelWindow) {
+        targetWindow := 0
+        try targetWindow := target.Application.ActiveWindow.Hwnd
+        if !targetWindow {
+            try targetWindow := target.Worksheet.Parent.Windows(1).Hwnd
+        }
+        return targetWindow || excelWindow
+    }
+
     static Return(start, excelWindow) {
         this.Go(start)
         this.Close(excelWindow)
     }
 
     static Close(excelWindow := 0) {
-        if this.Window
-            this.Window.Destroy(), this.Window := 0
+        if window := this.Window {
+            this.Window := 0
+            window.Destroy()
+        }
         if excelWindow && WinExist("ahk_id " excelWindow)
             WinActivate()
     }
@@ -315,6 +330,8 @@ CopyExactFormulas(range) {
         Loop range.Columns.Count {
             cell := range.Cells(row, A_Index)
             if cell.HasFormula {
+                if cell.HasArray
+                    throw ValueError("Cannot copy legacy array formulas.")
                 property := FormulaProperty(cell)
                 formulas.Push([row, A_Index, property, cell.%property%])
             }
@@ -322,19 +339,40 @@ CopyExactFormulas(range) {
     }
     if !formulas.Length
         return "No formulas in the selection."
-    ExactFormulas.Copied := formulas
+    ExactFormulas.Copied := {Rows: range.Rows.Count, Columns: range.Columns.Count, Formulas: formulas}
     return "Copied " formulas.Length (formulas.Length = 1 ? " formula" : " formulas") " exactly"
 }
 
-; Writes the copied formulas from the selection's first cell; cells that held no formula are left alone.
+; Writes the copied formulas into the selected block from its first cell; extra destination
+; cells and cells that held no formula are left alone.
 PasteExactFormulas(range) {
     if !ExactFormulas.Copied
         return "Copy formulas exactly first."
+    if range.Areas.Count != 1
+        throw ValueError("Select one block of cells.")
+    copied := ExactFormulas.Copied
+    if range.Rows.Count < copied.Rows || range.Columns.Count < copied.Columns
+        throw ValueError("Select at least " copied.Rows " by " copied.Columns " cells to paste the copied formulas.")
+    if SheetBoundsExceeded(range, copied)
+        throw ValueError("Copied block goes past the edge of the sheet.")
     writes := []
-    for formula in ExactFormulas.Copied
-        writes.Push([range.Cells(formula[1], formula[2]), formula[3], formula[4]])
+    for formula in copied.Formulas {
+        cell := range.Cells(formula[1], formula[2])
+        if cell.HasArray
+            throw ValueError("Cannot paste over a legacy array formula.")
+        writes.Push([cell, formula[3], formula[4]])
+    }
     WriteCells(range, writes)
-    return "Pasted " ExactFormulas.Copied.Length (ExactFormulas.Copied.Length = 1 ? " formula" : " formulas") " exactly"
+    return "Pasted " copied.Formulas.Length (copied.Formulas.Length = 1 ? " formula" : " formulas") " exactly"
+}
+
+SheetBoundsExceeded(range, copied) {
+    try {
+        maxRow := range.Worksheet.Rows.Count
+        maxCol := range.Worksheet.Columns.Count
+        return range.Row + copied.Rows - 1 > maxRow || range.Column + copied.Columns - 1 > maxCol
+    }
+    return false
 }
 
 ; Applies the format after the selection's current one, or the first. Excel may report a format

@@ -1206,6 +1206,28 @@ TestAddSnippet() {
         AssertEqual(FileGetSize(root "\snippets.local\Added.ahk"), 27, "Undo keeps the byte-order mark and drops the added line break")
         AssertEqual(FileRead(root "\snippets.local\Added.ahk", "UTF-8"), ":T:old::Earlier entry`n/*", "Undo restores the text")
 
+        ; Add snippet Edit limits retain oversize input so AddSnippet refuses instead of truncating.
+        FileDelete(root "\snippets.local\Added.ahk")
+        add := palette.OpenAddSnippet(false)
+        try {
+            ReplaceNativeEdit(add.Trigger, RepeatText("t", 45))
+            AssertEqual(StrLen(add.Trigger.Value), 41, "Add snippet trigger retains one character beyond cap")
+            AssertEqual(palette.AddSnippet(add.Trigger.Value, "Valid body", add.Status), false, "Oversize trigger refused rather than truncated")
+            ReplaceNativeEdit(add.Body, RepeatText("b", 16385))
+            AssertEqual(StrLen(add.Body.Value), 16385, "Add snippet body retains oversize paste intact")
+            AssertEqual(palette.AddSnippet("oversizebody", add.Body.Value, add.Status), false, "Oversize body refused rather than truncated")
+            multiline := RepeatText("a", 16000) RepeatText("`r`n", 384) ; 16,768 Edit CRLF units -> 16,384 normalised chars
+            ReplaceNativeEdit(add.Body, multiline)
+            AssertEqual(StrLen(add.Body.Value), 16384, "Add snippet body preserves 16,384 normalised chars past 16,384 Edit units")
+            AssertEqual(palette.AddSnippet("multilinecap", add.Body.Value, add.Status), true, "Multiline snippet at 16,384 normalised chars saves intact")
+            ReplaceNativeEdit(add.Body, RepeatText("x`r`n", 5462)) ; 5462 * 3 = 16,386 Edit units -> 10,924 normalised chars
+            AssertEqual(StrLen(add.Body.Value), 10924, "Add snippet body preserves multiline CRLF above 16,384 Edit units")
+            ReplaceNativeEdit(add.Body, RepeatText("`r`n", 16385)) ; 32,770 Edit units -> 16,385 normalised newlines without clipping mid-CRLF
+            AssertEqual(StrLen(add.Body.Value), 16385, "Add snippet body preserves 16,385 normalised newlines intact")
+            AssertEqual(InStr(add.Body.Value, "`r"), 0, "Add snippet body does not clip mid-CRLF")
+            AssertEqual(palette.AddSnippet("crlfover", add.Body.Value, add.Status), false, "Oversize 16,385-newline body refused rather than truncated")
+        } finally add.Dialog.Destroy()
+
         ; One bundled file and 99 local files: a new Added.ahk would push one past the 100-file limit.
         FileDelete(root "\snippets.local\Added.ahk")
         Loop 99
@@ -1381,11 +1403,29 @@ TestExcelValues() {
     AssertEqual(FakeCellAt(sheet, 10, 2).Formula2, "", "Constant in the copied block not pasted")
     AssertEqual(FakeCellAt(sheet, 12, 3).Formula2, "", "Paste covers only the copied shape")
     AssertEqual(commands["ExcelCopyFormulas"].Call(FakeBlock(sheet, 20, 20, 2, 2)), "No formulas in the selection.", "Empty copy reported")
-    commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 30, 1, 1, 1))
+    commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 30, 1, 2, 2))
     AssertEqual(FakeCellAt(sheet, 30, 1).Formula2, "=A2*$A$1", "Empty copy keeps the earlier formulas")
     two := FakeBlock(sheet, 1, 1, 1, 1), two.Areas.Count := 2
     AssertValueError(() => commands["ExcelCopyFormulas"].Call(two), "Several areas refused", "Select one block of cells.")
     AssertValueError(() => commands["ExcelCopyFormulas"].Call(FakeBlock(sheet, 1, 1, 101, 100)), "Over 10,000 cells refused for copying", "Select at most 10,000 cells.")
+
+    ; R5067 guards: PasteExactFormulas refuses multi-area, smaller selection, sheet edge and legacy arrays; CopyExactFormulas refuses legacy arrays.
+    twoPaste := FakeBlock(sheet, 40, 1, 2, 2), twoPaste.Areas.Count := 2
+    AssertValueError(() => commands["ExcelPasteFormulas"].Call(twoPaste), "Several areas refused on paste", "Select one block of cells.")
+    for badSize in [[1, 1], [1, 2], [2, 1]] {
+        AssertValueError(commands["ExcelPasteFormulas"].Bind(FakeBlock(sheet, 40, 1, badSize[1], badSize[2])), "Smaller destination refused " A_Index, "Select at least 2 by 2 cells to paste the copied formulas.")
+    }
+    AssertEqual(FakeCellAt(sheet, 40, 1).Formula2, "", "Refused small paste writes nothing to first cell")
+    AssertEqual(FakeCellAt(sheet, 41, 2).Formula2, "", "Refused small paste writes nothing outside selection")
+    AssertValueError(() => commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 1048576, 1, 2, 2, 1048576, 16384)), "Row sheet-edge paste refused", "Copied block goes past the edge of the sheet.")
+    AssertValueError(() => commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 1, 16384, 2, 2, 1048576, 16384)), "Column sheet-edge paste refused", "Copied block goes past the edge of the sheet.")
+    FakeCellAt(sheet, 51, 2).HasArray := true
+    AssertValueError(() => commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 50, 1, 2, 2)), "Paste over legacy array refused", "Cannot paste over a legacy array formula.")
+    AssertEqual(FakeCellAt(sheet, 50, 1).Formula2, "", "Refused array paste writes no earlier cell")
+    FakeCellAt(sheet, 60, 1).Formula2 := "=ROW(A1:A2)", FakeCellAt(sheet, 60, 1).HasArray := true
+    AssertValueError(() => commands["ExcelCopyFormulas"].Call(FakeBlock(sheet, 60, 1, 1, 1)), "Copy of legacy array refused", "Cannot copy legacy array formulas.")
+    commands["ExcelPasteFormulas"].Call(FakeBlock(sheet, 70, 1, 2, 2))
+    AssertEqual(FakeCellAt(sheet, 70, 1).Formula2, "=A2*$A$1", "Refused array copy keeps earlier copied formulas")
 }
 
 FakeValueCell(value, formula := "=") {
@@ -1406,8 +1446,8 @@ FakeCellAt(sheet, row, column) {
     return sheet[key]
 }
 
-FakeBlock(sheet, row, column, rows, columns) {
-    block := {CountLarge: rows * columns, Rows: {Count: rows}, Columns: {Count: columns}, Areas: {Count: 1}, Application: FakeExcel()}
+FakeBlock(sheet, row, column, rows, columns, maxRows := 1048576, maxCols := 16384) {
+    block := {Row: row, Column: column, CountLarge: rows * columns, Rows: {Count: rows}, Columns: {Count: columns}, Areas: {Count: 1}, Worksheet: {Rows: {Count: maxRows}, Columns: {Count: maxCols}}, Application: FakeExcel()}
     block.DefineProp("Cells", {Call: (this, r, c) => FakeHasFormula(FakeCellAt(sheet, row + r - 1, column + c - 1))})
     return block
 }
@@ -1510,6 +1550,19 @@ TestPrecedentTrace() {
     start.Worksheet.ProtectContents := true
     AssertEqual(ShowPrecedentPanel(start), "Excel cannot trace precedents on a protected sheet.", "Protected sheet refused")
     AssertEqual(start.Application.Log.Length, 0, "Protected sheet left untouched")
+
+    ; Cross-workbook Stay here target window resolution and re-entrant Close guard.
+    book2App := {ActiveWindow: {Hwnd: 22222}}
+    cross := FakeTraceRange("Sheet1!A1", "Other.xlsx", book2App)
+    AssertEqual(PrecedentPanel.TargetWindow(cross, 11111), 22222, "Stay uses active target workbook window instead of starting window")
+    fallbackTarget := {Worksheet: {Parent: {}}}
+    fallbackTarget.Worksheet.Parent.DefineProp("Windows", {Call: (this, i) => {Hwnd: 33333}})
+    AssertEqual(PrecedentPanel.TargetWindow(fallbackTarget, 11111), 33333, "Stay falls back to target workbook window when ActiveWindow unavailable")
+    AssertEqual(PrecedentPanel.TargetWindow({}, 11111), 11111, "Stay falls back to starting window when target window unavailable")
+    seenWindow := {ClearedBeforeDestroy: false}
+    PrecedentPanel.Window := {Destroy: (*) => (seenWindow.ClearedBeforeDestroy := PrecedentPanel.Window = 0)}
+    PrecedentPanel.Close()
+    AssertEqual(seenWindow.ClearedBeforeDestroy, true, "Close clears Window before calling Destroy")
 }
 
 TraceFails(start) {
