@@ -9,6 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 & (Join-Path $PSScriptRoot 'check-boundaries.ps1') -Quiet
 & (Join-Path $PSScriptRoot 'check-readme.ps1')
+& (Join-Path $PSScriptRoot 'check-triggers.ps1') -Quiet
 $runDirectory = Join-Path ([IO.Path]::GetTempPath()) ('au-accounting-hotkeys-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $runDirectory | Out-Null
 $stdoutPath = Join-Path $runDirectory 'stdout.txt'
