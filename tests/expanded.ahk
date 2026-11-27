@@ -448,15 +448,6 @@ TestHotstringSnippets() {
 ; character after a backtick stays refused, so unescaping reaches nothing AutoHotkey does not define.
 TestEscapeOracle() {
     documented := ["``", ";", ":", "{", "n", "r", "b", "t", "s", "v", "a", "f", '"', "'"]
-    probe := [], report := ""
-    Loop 95 {
-        if !HasValue(documented, Chr(A_Index + 31))
-            probe.Push(Chr(A_Index + 31))
-    }
-    for index, text in InterpreterEscapes(probe)
-        report .= "[" probe[index] "]=" (text == probe[index] ? "same" : text == "``" probe[index] ? "kept" : "codes " Ord(text)) " "
-    if probe.Length
-        throw Error("PROBE " report)
     oracle := InterpreterEscapes(documented)
     AssertEqual(oracle.Length, documented.Length, "The interpreter reports every documented escape")
     for index, character in documented {
@@ -467,10 +458,17 @@ TestEscapeOracle() {
         AssertEqual(loaded.Items.Length ? loaded.Items[1].Body : loaded.Errors[1], expected, "Escape ``" character " in a T hotstring types what AutoHotkey types")
     }
     AssertEqual(SnippetsFromHotstrings("::k::x``{y").Errors[1], "line 1, k: Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text.", "An escaped brace outside the T option is refused as key syntax")
+    undocumented := []
     Loop 95 {
-        character := Chr(A_Index + 31)
-        if !HasValue(documented, character)
-            AssertValueError(() => AhkUnescape("x``" character "y"), "Undocumented escape ``" character " refused", "Unsupported escape sequence ``" character ".")
+        if !HasValue(documented, Chr(A_Index + 31))
+            undocumented.Push(Chr(A_Index + 31))
+    }
+    ; AutoHotkey drops the backtick before these and keeps the character; a release that gives
+    ; one a meaning fails here, so the documented list is read again before the pin moves.
+    for index, text in InterpreterEscapes(undocumented) {
+        character := undocumented[index]
+        AssertEqual(text, character, "AutoHotkey gives undocumented escape ``" character " no meaning")
+        AssertValueError(() => AhkUnescape("x``" character "y"), "Undocumented escape ``" character " refused", "Unsupported escape sequence ``" character ".")
     }
     for character in ["é", "`t"]
         AssertValueError(() => AhkUnescape("x``" character), "Backtick before a non-ASCII or control character refused", "Unsupported escape sequence ``" character ".")
