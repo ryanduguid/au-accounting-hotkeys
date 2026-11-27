@@ -137,19 +137,32 @@ CheckTokenDelimiters(text) {
         throw ValueError("Snippet contains an incomplete token.")
 }
 
+; Opens the path itself rather than a link's target (FILE_FLAG_OPEN_REPARSE_POINT) and refuses the
+; opened handle if it is a reparse point, so a file replaced by a link after the folder was listed
+; is refused too; the handle that passed the check is the one read. NTFS hard links are not
+; reparse points and are not detected.
 ReadUtf8Snippet(path, maximum := 16384) {
-    handle := FileOpen(path, "r")
-    if !IsObject(handle)
+    ; GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, OPEN_EXISTING.
+    handle := DllCall("CreateFileW", "Str", path, "UInt", 0x80000000, "UInt", 7, "Ptr", 0, "UInt", 3, "UInt", 0x200000, "Ptr", 0, "Ptr")
+    if handle = -1
         throw ValueError("Snippet could not be opened for reading.")
     try {
-        length := handle.Length
+        ; BY_HANDLE_FILE_INFORMATION; FILE_ATTRIBUTE_REPARSE_POINT is 0x400.
+        information := Buffer(52, 0)
+        if !DllCall("GetFileInformationByHandle", "Ptr", handle, "Ptr", information)
+            throw ValueError("Snippet could not be opened for reading.")
+        if NumGet(information, 0, "UInt") & 0x400
+            throw ValueError("Linked snippet files are not loaded.")
+        length := 0
+        if !DllCall("GetFileSizeEx", "Ptr", handle, "Int64*", &length)
+            throw ValueError("Snippet could not be read completely.")
         if length = 0 || length > 65536
             throw ValueError("Snippet must contain 1 to 65,536 UTF-8 bytes.")
         bytes := Buffer(length)
-        handle.Pos := 0
-        if handle.RawRead(bytes, length) != length
+        read := 0
+        if !DllCall("ReadFile", "Ptr", handle, "Ptr", bytes, "UInt", length, "UInt*", &read, "Ptr", 0) || read != length
             throw ValueError("Snippet could not be read completely.")
-    } finally handle.Close()
+    } finally DllCall("CloseHandle", "Ptr", handle)
     characters := DllCall("MultiByteToWideChar", "UInt", 65001, "UInt", 8, "Ptr", bytes, "Int", length, "Ptr", 0, "Int", 0)
     if characters = 0
         throw ValueError("Snippet must be well-formed UTF-8.")
@@ -306,8 +319,7 @@ AhkUnescape(text) {
 SnippetFileEntries(path, name, extension) {
     if extension != "ahk" && !RegExMatch(name, "^[A-Za-z0-9][A-Za-z0-9 _-]{0,79}\z")
         throw ValueError("Snippet labels must start with an ASCII letter or digit, use only ASCII letters, digits, spaces, underscores or hyphens, and contain at most 80 characters.")
-    if InStr(FileGetAttrib(path), "L")
-        throw ValueError("Linked snippet files are not loaded.")
+    ; ReadUtf8Snippet refuses a linked file on the handle it reads.
     if extension != "ahk"
         return {Items: [{Name: name, Body: ReadUtf8Snippet(path)}], Errors: []}
     loaded := SnippetsFromHotstrings(ReadUtf8Snippet(path, 65536))
