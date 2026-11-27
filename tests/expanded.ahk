@@ -15,6 +15,7 @@ TestExpanded() {
     TestSnippetChoices()
     TestSnippetDateShifts()
     TestSnippetLoading()
+    TestLinkedSnippetFiles()
     TestSnippetLabelsAndRecovery()
     TestHotstringSnippets()
     TestSnippetLimits()
@@ -818,6 +819,39 @@ TestSnippetLoading() {
         }
         DirDelete(directory "\nested")
         DirDelete(directory "\other")
+        DirDelete(directory)
+    }
+}
+
+; The open itself refuses a symbolic link, not only the folder listing, so a file replaced by a link
+; after the listing is never read: ReadUtf8Snippet is called on the link directly.
+TestLinkedSnippetFiles() {
+    directory := A_Temp "\au-hotkeys-linked-" ProcessExist()
+    target := A_Temp "\au-hotkeys-link-target-" ProcessExist() ".txt"
+    link := directory "\linked.txt"
+    DirCreate(directory)
+    try {
+        FileAppend("outside the snippet folder", target, "UTF-8")
+        ; SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE works with Developer Mode; otherwise this needs
+        ; an elevated run, as on hosted CI. A run that can create neither skips these checks.
+        if !DllCall("CreateSymbolicLinkW", "Str", link, "Str", target, "UInt", 2, "UChar") {
+            if A_IsAdmin
+                throw Error("Elevated test run could not create a symbolic link: " A_LastError ".")
+            return
+        }
+        AssertEqual(FileRead(link, "UTF-8"), "outside the snippet folder", "Link resolves to its target")
+        AssertValueError(() => ReadUtf8Snippet(link), "Opening a linked file refuses it", "Linked snippet files are not loaded.")
+        AssertValueError(() => ReadUtf8Snippet(link, 65536), "Opening a linked hotstring file refuses it", "Linked snippet files are not loaded.")
+        loaded := LoadSnippets([directory], {Year: 2026, Quarter: 4, Timestamp: "20240229000000"})
+        AssertEqual(loaded.Items.Length, 0, "Linked snippet file not loaded")
+        AssertEqual(loaded.Errors.Length, 1, "Linked snippet file reported")
+        AssertEqual(loaded.Errors[1], "linked: Linked snippet files are not loaded.", "Linked snippet file refusal named")
+        AssertEqual(ReadUtf8Snippet(target), "outside the snippet folder", "The target itself still reads")
+    } finally {
+        if FileExist(link)
+            FileDelete(link)
+        if FileExist(target)
+            FileDelete(target)
         DirDelete(directory)
     }
 }
