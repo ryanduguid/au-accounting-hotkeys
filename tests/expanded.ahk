@@ -18,6 +18,7 @@ TestExpanded() {
     TestLinkedSnippetFiles()
     TestSnippetLabelsAndRecovery()
     TestHotstringSnippets()
+    TestEscapeOracle()
     TestSnippetLimits()
     TestPickerState()
     TestPickerHolidayState()
@@ -440,6 +441,81 @@ TestHotstringSnippets() {
         AssertEqual(misc.Errors[1], "Defaults.ahk: line 1: #Hotstring changes the default options; set options on each entry instead.", "File-level refusal reported")
         AssertEqual(misc.Errors[2], "Empty.ahk: No hotstrings found.", "File without entries reported")
     } finally DirDelete(base, true)
+}
+
+; The interpreter running these tests is the oracle: a child script reports, as character codes,
+; what each escape AutoHotkey documents becomes, and AhkUnescape must give the same. Every other
+; character after a backtick stays refused, so unescaping reaches nothing AutoHotkey does not define.
+TestEscapeOracle() {
+    documented := ["``", ";", ":", "{", "n", "r", "b", "t", "s", "v", "a", "f", '"', "'"]
+    probe := [], report := ""
+    Loop 95 {
+        if !HasValue(documented, Chr(A_Index + 31))
+            probe.Push(Chr(A_Index + 31))
+    }
+    for index, text in InterpreterEscapes(probe)
+        report .= "[" probe[index] "]=" (text == probe[index] ? "same" : text == "``" probe[index] ? "kept" : "codes " Ord(text)) " "
+    if probe.Length
+        throw Error("PROBE " report)
+    oracle := InterpreterEscapes(documented)
+    AssertEqual(oracle.Length, documented.Length, "The interpreter reports every documented escape")
+    for index, character in documented {
+        expected := "x" oracle[index] "y"
+        AssertEqual(StrLen(oracle[index]), 1, "Escape ``" character " is one character in AutoHotkey")
+        AssertEqual(AhkUnescape("x``" character "y"), expected, "Escape ``" character " unescapes as AutoHotkey reads it")
+        loaded := SnippetsFromHotstrings(":T:k::x``" character "y")
+        AssertEqual(loaded.Items.Length ? loaded.Items[1].Body : loaded.Errors[1], expected, "Escape ``" character " in a T hotstring types what AutoHotkey types")
+    }
+    AssertEqual(SnippetsFromHotstrings("::k::x``{y").Errors[1], "line 1, k: Uses key syntax such as {Enter}, ^c or !; add the T option to load it as text.", "An escaped brace outside the T option is refused as key syntax")
+    Loop 95 {
+        character := Chr(A_Index + 31)
+        if !HasValue(documented, character)
+            AssertValueError(() => AhkUnescape("x``" character "y"), "Undocumented escape ``" character " refused", "Unsupported escape sequence ``" character ".")
+    }
+    for character in ["é", "`t"]
+        AssertValueError(() => AhkUnescape("x``" character), "Backtick before a non-ASCII or control character refused", "Unsupported escape sequence ``" character ".")
+    AssertValueError(() => AhkUnescape("x``"), "A trailing backtick refused", "Unsupported escape sequence ``.")
+}
+
+HasValue(list, value) {
+    for item in list
+        if item == value
+            return true
+    return false
+}
+
+; Runs a script holding "x`<c>y" as a quoted literal for each character and returns the text the
+; interpreter put between x and y, one entry for each character.
+InterpreterEscapes(characters) {
+    base := A_Temp "\au-hotkeys-escapes-" ProcessExist()
+    script := base ".ahk", output := base ".txt"
+    source := "#Requires AutoHotkey v2.0`n#NoTrayIcon`n#SingleInstance Off`nresult := `"`"`n"
+    for character in characters
+        source .= 'result .= Codes("x``' character 'y") "``n"' "`n"
+    source .= 'FileAppend(result, A_Args[1], "UTF-8-RAW")`nExitApp(0)`n'
+        . 'Codes(text) {`n    codes := ""`n    Loop Parse text`n        codes .= Ord(A_LoopField) " "`n    return RTrim(codes)`n}`n'
+    try {
+        FileAppend(source, script, "UTF-8")
+        status := RunWait('"' A_AhkPath '" /ErrorStdOut "' script '" "' output '"', , "Hide")
+        if status != 0 || !FileExist(output)
+            throw Error("The escape oracle script exited with " status ".")
+        result := []
+        for line in StrSplit(RTrim(FileRead(output, "UTF-8"), "`n"), "`n") {
+            codes := StrSplit(line, " ")
+            if codes.Length < 2 || codes[1] != Ord("x") || codes[codes.Length] != Ord("y")
+                throw Error("The escape oracle reported '" line "'.")
+            text := ""
+            Loop codes.Length - 2
+                text .= Chr(codes[A_Index + 1])
+            result.Push(text)
+        }
+        return result
+    } finally {
+        if FileExist(script)
+            FileDelete(script)
+        if FileExist(output)
+            FileDelete(output)
+    }
 }
 
 TestSnippetChoices() {
