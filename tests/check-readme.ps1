@@ -19,3 +19,23 @@ $names = @([regex]::Matches($readme, 'au-accounting-hotkeys-v[^\s`]*\.zip') | Fo
 if ($names.Count -eq 0) { throw ('README.md does not name ' + $expected + '.') }
 $wrong = @($names | Where-Object { $_ -cne $expected } | Sort-Object -Unique)
 if ($wrong.Count -gt 0) { throw ('README.md names ' + ($wrong -join ', ') + '; CITATION.cff declares ' + $expected + '.') }
+
+# docs/security.md's 'Verify a download' commands must verify that same release, from this
+# repository's release workflow, so they can be pasted as they stand.
+$security = Get-Content -LiteralPath (Join-Path $root 'docs/security.md') -Raw
+if ($security -notmatch '(?ms)^## Verify a download\r?\n(.*?)(?=^## )') { throw 'docs/security.md has no Verify a download section.' }
+$verify = $Matches[1]
+$tags = @([regex]::Matches($verify, '\bv\d+\.\d+\.\d+\b') | ForEach-Object Value | Sort-Object -Unique)
+if ($tags.Count -ne 1 -or $tags[0] -cne "v$version") {
+    throw ('docs/security.md verifies ' + ($tags -join ', ') + '; CITATION.cff declares v' + $version + '.')
+}
+foreach ($required in @(
+        ('.\' + $expected), ('.\au-accounting-hotkeys-v' + $version + '.sigstore.json'),
+        '--repo ryanduguid/au-accounting-hotkeys',
+        '--signer-workflow ryanduguid/au-accounting-hotkeys/.github/workflows/release.yml',
+        ('--source-ref refs/tags/v' + $version))) {
+    if (-not $verify.Contains($required)) { throw ('docs/security.md Verify a download lacks ' + $required + '.') }
+}
+if (-not (Test-Path -LiteralPath (Join-Path $root '.github/workflows/release.yml') -PathType Leaf)) {
+    throw 'docs/security.md names .github/workflows/release.yml, which does not exist.'
+}

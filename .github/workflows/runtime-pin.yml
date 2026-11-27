@@ -1,0 +1,41 @@
+name: AutoHotkey pin
+
+# check.yml tests against one pinned AutoHotkey release. This fails when winget,
+# which users install from, offers a newer v2 release, so the pin is moved on purpose.
+on:
+  schedule:
+    - cron: "43 6 * * 3"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/check.yml
+      - .github/workflows/runtime-pin.yml
+      - README.md
+      - tests/check-runtime-pin.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  pin:
+    name: AutoHotkey pin matches winget
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Refuse a stale pin in controlled listings
+        shell: pwsh
+        run: |
+          $pin = [regex]::Match((Get-Content -Raw .github/workflows/check.yml), 'releases/download/v(\d+\.\d+\.\d+)/').Groups[1].Value
+          $next = ([version]$pin).Major, ([version]$pin).Minor, (([version]$pin).Build + 1) -join '.'
+          & ./tests/check-runtime-pin.ps1 -WingetVersions @('1.1.99.99', '2.1-alpha.1', $pin)
+          $failed = $false
+          try { & ./tests/check-runtime-pin.ps1 -WingetVersions @($pin, $next) } catch { $failed = $true; Write-Output "Refused as expected: $_" }
+          if (-not $failed) { throw "A listing with $next did not fail." }
+      - name: Compare the pin with winget-pkgs
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./tests/check-runtime-pin.ps1
