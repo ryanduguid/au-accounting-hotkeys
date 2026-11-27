@@ -470,8 +470,10 @@ TestEscapeOracle() {
         AssertEqual(text, character, "AutoHotkey gives undocumented escape ``" character " no meaning")
         AssertValueError(() => AhkUnescape("x``" character "y"), "Undocumented escape ``" character " refused", "Unsupported escape sequence ``" character ".")
     }
-    for character in ["é", "`t"]
+    for code in [0xE9, 9] {
+        character := Chr(code)
         AssertValueError(() => AhkUnescape("x``" character), "Backtick before a non-ASCII or control character refused", "Unsupported escape sequence ``" character ".")
+    }
     AssertValueError(() => AhkUnescape("x``"), "A trailing backtick refused", "Unsupported escape sequence ``.")
 }
 
