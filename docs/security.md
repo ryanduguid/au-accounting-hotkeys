@@ -58,12 +58,13 @@ already been published.
 
 ## Verify a download
 
-For an actual published tag, replace `v1.0.0` below with that exact tag. Download
+The commands below verify `v1.2.0`, the version in `CITATION.cff`. For another
+published tag, replace `v1.2.0` with that exact tag. Download
 its ZIP, `SHA256SUMS` and `.sigstore.json` bundle from this repository's Releases
 page, keeping them in the same directory. Check the ZIP hash first:
 
 ```powershell
-Get-FileHash .\au-accounting-hotkeys-v1.0.0.zip -Algorithm SHA256
+Get-FileHash .\au-accounting-hotkeys-v1.2.0.zip -Algorithm SHA256
 Get-Content .\SHA256SUMS
 ```
 
@@ -73,11 +74,11 @@ Use a current GitHub CLI to verify the signed provenance, repository, workflow
 and source tag:
 
 ```powershell
-gh attestation verify .\au-accounting-hotkeys-v1.0.0.zip `
-  --bundle .\au-accounting-hotkeys-v1.0.0.sigstore.json `
+gh attestation verify .\au-accounting-hotkeys-v1.2.0.zip `
+  --bundle .\au-accounting-hotkeys-v1.2.0.sigstore.json `
   --repo ryanduguid/au-accounting-hotkeys `
   --signer-workflow ryanduguid/au-accounting-hotkeys/.github/workflows/release.yml `
-  --source-ref refs/tags/v1.0.0
+  --source-ref refs/tags/v1.2.0
 ```
 
 Stop if verification fails. A valid attestation identifies the build's source

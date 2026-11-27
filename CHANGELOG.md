@@ -4,6 +4,12 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
+### Changed
+
+- CI tests against AutoHotkey 2.0.32, the release winget now offers.
+- `docs/security.md` verifies the current release, v1.2.0, and `tests/check-readme.ps1` fails when its verification commands name another version or another signer workflow.
+- A weekly `AutoHotkey pin` workflow fails when winget offers a newer AutoHotkey v2 release than CI's pinned runtime.
+
 ### Fixed
 
 - The picker checks a snippet file for a link on the handle it reads, so a file replaced by a symbolic link after the folder is listed is refused instead of read from the link's target.
