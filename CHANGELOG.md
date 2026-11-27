@@ -4,6 +4,10 @@ All notable changes to this repository are recorded here. The format follows [Ke
 
 ## [Unreleased]
 
+### Fixed
+
+- The picker checks a snippet file for a link on the handle it reads, so a file replaced by a symbolic link after the folder is listed is refused instead of read from the link's target.
+
 ## [1.2.0] - 2026-11-25
 
 ### Added
