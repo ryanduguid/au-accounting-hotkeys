@@ -9,6 +9,7 @@ All notable changes to this repository are recorded here. The format follows [Ke
 - CI tests against AutoHotkey 2.0.32, the release winget now offers.
 - `docs/security.md` verifies the current release, v1.2.0, and `tests/check-readme.ps1` fails when its verification commands name another version or another signer workflow.
 - A weekly `AutoHotkey pin` workflow fails when winget offers a newer AutoHotkey v2 release than CI's pinned runtime.
+- Tests check how hotstring snippets read each escape sequence AutoHotkey documents against what the AutoHotkey running CI makes of the same text, and that a backtick before any other character is still refused. The README lists the escape sequences read.
 
 ### Fixed
 
